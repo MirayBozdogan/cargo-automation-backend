@@ -9,6 +9,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,22 +29,28 @@ public class CustomerService {
         this.addressRepository = addressRepository;
     }
 
-    public List<Customer> getir(){
-        return customerRepository.findAll();
-    }
 
     public Customer customerGet(Integer id) {
-        return customerRepository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Müşteri bulunamadı: " + id)
-                );
+
+        Customer currentCustomer = getCurrentCustomer();
+
+        if (!currentCustomer.getId().equals(id)) {
+            throw new AccessDeniedException(
+                    "Bu müşteriye erişim yetkiniz yok."
+            );
+        }
+
+        return currentCustomer;
     }
 
-    public Page<Customer> sayfaGetir(Pageable pageable){
-    return  customerRepository.findAll(pageable);
-    }
 
     public List<Customer> search(Map<String, String> filters) {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        filters.put("email", email);
 
         Specification<Customer> specification =
                 CustomerSpecification.filter(filters);
@@ -78,30 +86,11 @@ public class CustomerService {
 
       return customerRepository.save(customer);
     }
-    public List<Customer> topluEkle(List<CustomerRequest> customerRequests) {
-
-        List<Customer> customers = new ArrayList<>();
-
-        for (CustomerRequest customerRequest : customerRequests) {
-
-            Customer customer = new Customer();
-            customer.setName(customerRequest.getName());
-            customer.setSurname(customerRequest.getSurname());
-            customer.setEmail(customerRequest.getEmail());
-            customer.setAge(customerRequest.getAge());
-            customer.setTc(customerRequest.getTc());
-            customer.setTelNo(customerRequest.getTelNo());
-            customers.add(customer);
-        }
-        return customerRepository.saveAll(customers);
-    }
 
     public Customer guncelle(Integer id, CustomerRequest customerRequest) {
 
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Müşteri bulunamadı: " + id)
-                );
+        Customer customer = customerGet(id);
+
 
         if (customerRepository.existsByEmail(customerRequest.getEmail())
                 && !customer.getEmail().equals(customerRequest.getEmail())) {
@@ -133,16 +122,29 @@ public class CustomerService {
 
         return customerRepository.save(customer);
     }
+
     public void deleteCustomer(Integer id) {
+
+        Customer customer = customerGet(id);
 
         if (addressRepository.existsByCustomerId(id)) {
             throw new GlobalExceptionHandler.DuplicateResourceException(
                     "Bu müşteriye ait adres kayıtları olduğu için silinemez."
             );
         }
-        customerRepository.deleteById(id);
+
+        customerRepository.delete(customer);
     }
 
+    private Customer getCurrentCustomer() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        return customerRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Müşteri bulunamadı."));
+    }
 
 
 }

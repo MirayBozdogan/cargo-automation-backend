@@ -12,6 +12,8 @@ import com.example.staj1.repository.CityRepository;
 import com.example.staj1.repository.CustomerRepository;
 import com.example.staj1.repository.DistrictRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,15 +37,14 @@ public class AddressService {
         this.districtRepository = districtRepository;
     }
 
-    public Page<Address> getAll(Pageable pageable) {
-        return addressRepository.findAll(pageable);
-    }
 
     public List<Address> getById(Integer customerId) {
 
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Müşteri bulunamadı."));
+        Customer currentCustomer = getCurrentCustomer();
+
+        if (!currentCustomer.getId().equals(customerId)) {
+            throw new AccessDeniedException("Bu müşterinin adreslerine erişemezsiniz.");
+        }
 
         List<Address> addresses = addressRepository.findByCustomerId(customerId);
 
@@ -55,12 +56,21 @@ public class AddressService {
 
         return addresses;
     }
+
     public Address create(AddressRequest addressRequest, Integer customerId) {
 
+        Customer currentCustomer = getCurrentCustomer();
+
+        if (!currentCustomer.getId().equals(customerId)) {
+            throw new AccessDeniedException(
+                    "Bu müşteri adına adres ekleyemezsiniz."
+            );
+        }
+
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Müşteri bulunamadı."
-                ));
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Müşteri bulunamadı.")
+                );
 
         City city = cityRepository.findById(addressRequest.getCityId())
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -90,6 +100,14 @@ public class AddressService {
     }
 
     public Address update(Integer customer_id, Integer id, AddressRequest addressRequest) {
+        Customer currentCustomer = getCurrentCustomer();
+
+        if (!currentCustomer.getId().equals(customer_id)) {
+            throw new AccessDeniedException(
+                    "Bu müşterinin adresini güncelleyemezsiniz."
+            );
+        }
+
         Customer customer = customerRepository.findById(customer_id)
                 .orElseThrow(() ->
                         new EntityNotFoundException("Müşteri bulunamadı."));
@@ -130,6 +148,14 @@ public class AddressService {
 
     public void delete(Integer customer_id, Integer id) {
 
+        Customer currentCustomer = getCurrentCustomer();
+
+        if (!currentCustomer.getId().equals(customer_id)) {
+            throw new AccessDeniedException(
+                    "Bu müşterinin adresini silemezsiniz."
+            );
+        }
+
         Customer customer = customerRepository.findById(customer_id)
                 .orElseThrow(() ->
                         new EntityNotFoundException("Müşteri bulunamadı."));
@@ -145,5 +171,11 @@ public class AddressService {
         }
 
         addressRepository.delete(address);
+    }
+
+    private Customer getCurrentCustomer() {
+        return (Customer) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
     }
 }

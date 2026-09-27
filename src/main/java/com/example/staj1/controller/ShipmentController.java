@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 @RestController
 @RequestMapping("/shipment")
 public class ShipmentController {
@@ -32,18 +29,8 @@ public class ShipmentController {
 
     @GetMapping("/{id}")
     public ShipmentResponse getById(@PathVariable Integer id) {
+
         return shipmentService.getById(id);
-    }
-
-    @GetMapping("/customer/{customerId}")
-    public Page<Shipment> getByCustomerId(
-            @PathVariable Integer customerId,
-            Pageable pageable) {
-
-        return shipmentService.getByCustomerId(
-                customerId,
-                pageable
-        );
     }
 
     @GetMapping("/barcode/{barcode}")

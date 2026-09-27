@@ -26,19 +26,10 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    @GetMapping("/list")
-    public List<Customer> getir() {
-        return customerService.getir();
-    }
 
     @GetMapping("/{id}")
     public Customer customerGet(@PathVariable Integer id) {
         return customerService.customerGet(id);
-    }
-
-    @GetMapping("")
-    public Page<Customer> sayfaGetir(Pageable pageable) {
-        return customerService.sayfaGetir(pageable);
     }
 
     @GetMapping("/search")
@@ -50,11 +41,6 @@ public class CustomerController {
     @PostMapping("")
     public Customer ekle(@Valid @RequestBody CustomerRequest customerRequest) {
         return customerService.ekle(customerRequest);
-    }
-
-    @PostMapping("/toplu")
-    public List<Customer> topluEkle(@Valid @RequestBody List<CustomerRequest> customers) {
-        return customerService.topluEkle(customers);
     }
 
     @PutMapping("/{id}")

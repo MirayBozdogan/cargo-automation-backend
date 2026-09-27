@@ -23,11 +23,6 @@ public class AddressController {
         this.addressService = addressService;
     }
 
-    @GetMapping("/address")
-    public Page<Address> getAll(Pageable pageable) {
-        return addressService.getAll(pageable);
-    }
-
     @GetMapping("/{customer_id}/address")
     public List<Address> getById(@PathVariable Integer customer_id) {
         return addressService.getById(customer_id);
