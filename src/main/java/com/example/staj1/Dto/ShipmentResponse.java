@@ -1,6 +1,6 @@
 package com.example.staj1.Dto;
 
-import com.example.staj1.model.Customer;
+import com.example.staj1.model.User;
 
 import java.math.BigDecimal;
 
@@ -12,8 +12,8 @@ public class ShipmentResponse {
     private BigDecimal height;
     private BigDecimal weight;
     private BigDecimal price;
-    private Customer sender;
-    private Customer receiver;
+    private User sender;
+    private User receiver;
     private Integer senderAddressId;
     private Integer receiverAddressId;
 
@@ -79,19 +79,19 @@ public class ShipmentResponse {
         this.price = price;
     }
 
-    public Customer getSender() {
+    public User getSender() {
         return sender;
     }
 
-    public void setSender(Customer sender) {
+    public void setSender(User sender) {
         this.sender = sender;
     }
 
-    public Customer getReceiver() {
+    public User getReceiver() {
         return receiver;
     }
 
-    public void setReceiver(Customer receiver) {
+    public void setReceiver(User receiver) {
         this.receiver = receiver;
     }
 

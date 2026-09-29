@@ -1,15 +1,14 @@
 package com.example.staj1.repository;
 
-import com.example.staj1.model.Customer;
+import com.example.staj1.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.util.List;
 import java.util.Optional;
 
-public interface CustomerRepository
-        extends JpaRepository<Customer, Integer>,
-        JpaSpecificationExecutor<Customer> {
+public interface UserRepository
+        extends JpaRepository<User, Integer>,
+        JpaSpecificationExecutor<User> {
 
     boolean existsByEmail(String email);
 
@@ -17,5 +16,5 @@ public interface CustomerRepository
 
     boolean existsByTelNo(String telNo);
 
-    Optional<Customer> findByEmail(String email);
+    Optional<User> findByEmail(String email);
 }

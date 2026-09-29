@@ -7,10 +7,10 @@ import java.util.List;
 
 public interface AddressRepository extends JpaRepository<Address, Integer> {
 
-    List<Address> findByCustomerId(Integer customer_id);
-    boolean existsByCustomerId(Integer customer_id);
+    List<Address> findByUserId(Integer user_id);
+    boolean existsByUserId(Integer user_id);
     boolean existsByCityId(Integer cityId);
 
     boolean existsByDistrictId(Integer id);
-    boolean existsByIdAndCustomerId(Integer id, Integer customerId);
+    boolean existsByIdAndUserId(Integer id, Integer userId);
 }

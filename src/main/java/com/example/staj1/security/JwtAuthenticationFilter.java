@@ -1,6 +1,6 @@
 package com.example.staj1.security;
 
-import com.example.staj1.repository.CustomerRepository;
+import com.example.staj1.repository.UserRepository;
 import com.example.staj1.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,14 +19,14 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            CustomerRepository customerRepository) {
+            UserRepository userRepository) {
 
         this.jwtService = jwtService;
-        this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .getAuthentication() == null) {
 
             UserDetails userDetails =
-                    customerRepository.findByEmail(email)
+                    userRepository.findByEmail(email)
                             .orElse(null);
 
             if (userDetails != null &&

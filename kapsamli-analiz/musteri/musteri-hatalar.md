@@ -1,7 +1,7 @@
 # Müşteri Ekleme Endpoint'i İçin Hata/Problem Notları
 
 ## Test edilen endpoint
-- POST /customers
+- POST /users
 
 ## Test yöntemi
 Aşağıdaki giriş türleri doğrudan endpoint'e gönderildi:

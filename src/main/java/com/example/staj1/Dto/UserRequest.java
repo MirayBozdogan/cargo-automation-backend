@@ -6,7 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
-public class CustomerRequest {
+public class UserRequest {
 
     @NotBlank(message = "İsim boş olamaz.")
     @JsonDeserialize(using = StrictStringDeserializer.class)

@@ -3,12 +3,9 @@ package com.example.staj1.service;
 import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
-import com.example.staj1.model.Address;
-import com.example.staj1.model.Customer;
-import com.example.staj1.model.Price;
-import com.example.staj1.model.Shipment;
+import com.example.staj1.model.*;
 import com.example.staj1.repository.AddressRepository;
-import com.example.staj1.repository.CustomerRepository;
+import com.example.staj1.repository.UserRepository;
 import com.example.staj1.repository.PriceRepository;
 import com.example.staj1.repository.ShipmentRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,87 +24,87 @@ public class ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
     private final PriceRepository priceRepository;
-    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
     private final AddressRepository addressRepository;
 
     public ShipmentService(
             ShipmentRepository shipmentRepository,
             PriceRepository priceRepository,
-            CustomerRepository customerRepository,
+            UserRepository userRepository,
             AddressRepository addressRepository) {
 
         this.shipmentRepository = shipmentRepository;
         this.priceRepository = priceRepository;
-        this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
         this.addressRepository = addressRepository;
     }
 
     public Page<Shipment> getAll(Pageable pageable) {
 
-        Customer customer = getCurrentCustomer();
+        User user = getCurrentUser();
 
         return shipmentRepository
                 .findBySender_IdAndDeletedFalseOrReceiver_IdAndDeletedFalse(
-                        customer.getId(),
-                        customer.getId(),
+                        user.getId(),
+                        user.getId(),
                         pageable);
     }
 
     public ShipmentResponse getById(Integer id) {
 
-        Customer customer = getCurrentCustomer();
+        User user = getCurrentUser();
 
         Shipment shipment = shipmentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() ->
                         new EntityNotFoundException("Gönderi bulunamadı."));
 
-        checkAccess(shipment, customer);
+        checkAccess(shipment, user);
 
         return toResponse(shipment);
     }
 
     public Shipment getByBarcode(String barcode) {
 
-        Customer customer = getCurrentCustomer();
+        User user = getCurrentUser();
 
         Shipment shipment = shipmentRepository
                 .findByBarcodeAndDeletedFalse(barcode)
                 .orElseThrow(() ->
                         new EntityNotFoundException("Barkod bulunamadı."));
 
-        checkAccess(shipment, customer);
+        checkAccess(shipment, user);
 
         return shipment;
     }
 
     public ShipmentResponse create(ShipmentRequest shipmentRequest) {
 
-        Customer currentCustomer = getCurrentCustomer();
+        User currentUser = getCurrentUser();
 
-        // Sadece giriş yapan müşteri kendi adına gönderi oluşturabilir.
+        // Sadece giriş yapan kullanıcı kendi adına gönderi oluşturabilir.
         if (shipmentRequest.getSenderId() == null ||
-                !currentCustomer.getId().equals(shipmentRequest.getSenderId())) {
+                !currentUser.getId().equals(shipmentRequest.getSenderId())) {
 
             throw new AccessDeniedException(
-                    "Bu müşteri adına gönderi oluşturamazsınız.");
+                    "Bu kullanıcı adına gönderi oluşturamazsınız.");
         }
 
-        Customer sender = null;
-        Customer receiver = null;
+        User sender = null;
+        User receiver = null;
 
-        // Gönderici müşteri varsa bul
+        // Gönderici kullanıcı varsa bul
         if (shipmentRequest.getSenderId() != null) {
 
-            sender = customerRepository.findById(
+            sender = userRepository.findById(
                     shipmentRequest.getSenderId()
             ).orElseThrow(() ->
                     new EntityNotFoundException("Gönderici bulunamadı."));
         }
 
-        // Alıcı müşteri varsa bul
+        // Alıcı kullanıcı varsa bul
         if (shipmentRequest.getReceiverId() != null) {
 
-            receiver = customerRepository.findById(
+            receiver = userRepository.findById(
                     shipmentRequest.getReceiverId()
             ).orElseThrow(() ->
                     new EntityNotFoundException("Alıcı bulunamadı."));
@@ -121,7 +118,7 @@ public class ShipmentService {
 
             if (sender == null) {
                 throw new IllegalArgumentException(
-                        "Gönderici adresi kullanmak için gönderici müşteri seçilmelidir.");
+                        "Gönderici adresi kullanmak için gönderici kullanıcı seçilmelidir.");
             }
 
             senderAddress = addressRepository.findById(
@@ -129,9 +126,9 @@ public class ShipmentService {
             ).orElseThrow(() ->
                     new EntityNotFoundException("Gönderici adresi bulunamadı."));
 
-            if (!senderAddress.getCustomer().getId().equals(sender.getId())) {
+            if (!senderAddress.getUser().getId().equals(sender.getId())) {
                 throw new IllegalArgumentException(
-                        "Gönderici adresi bu müşteriye ait değil.");
+                        "Gönderici adresi bu kullanıcıya ait değil.");
             }
         }
 
@@ -140,7 +137,7 @@ public class ShipmentService {
 
             if (receiver == null) {
                 throw new IllegalArgumentException(
-                        "Alıcı adresi kullanmak için alıcı müşteri seçilmelidir.");
+                        "Alıcı adresi kullanmak için alıcı kullanıcı seçilmelidir.");
             }
 
             receiverAddress = addressRepository.findById(
@@ -148,9 +145,9 @@ public class ShipmentService {
             ).orElseThrow(() ->
                     new EntityNotFoundException("Alıcı adresi bulunamadı."));
 
-            if (!receiverAddress.getCustomer().getId().equals(receiver.getId())) {
+            if (!receiverAddress.getUser().getId().equals(receiver.getId())) {
                 throw new IllegalArgumentException(
-                        "Alıcı adresi bu müşteriye ait değil.");
+                        "Alıcı adresi bu kullanıcıya ait değil.");
             }
         }
 
@@ -272,7 +269,7 @@ public class ShipmentService {
             Integer id,
             ShipmentRequest request) {
 
-        Customer currentCustomer = getCurrentCustomer();
+        User currentUser = getCurrentUser();
 
         // Önce gönderiyi bul
         Shipment shipment = shipmentRepository.findByIdAndDeletedFalse(id)
@@ -281,31 +278,31 @@ public class ShipmentService {
 
         // Sadece gönderici güncelleyebilir
         if (shipment.getSender() == null ||
-                !shipment.getSender().getId().equals(currentCustomer.getId())) {
+                !shipment.getSender().getId().equals(currentUser.getId())) {
 
             throw new AccessDeniedException(
                     "Bu gönderiyi güncelleme yetkiniz yok.");
         }
 
-        Customer sender = null;
-        Customer receiver = null;
+        User sender = null;
+        User receiver = null;
 
         if (request.getSenderId() != null) {
 
-            sender = customerRepository.findById(request.getSenderId())
+            sender = userRepository.findById(request.getSenderId())
                     .orElseThrow(() ->
                             new EntityNotFoundException("Gönderici bulunamadı."));
 
-            // Güncellemede de gönderici giriş yapan müşteri olmalı
-            if (!sender.getId().equals(currentCustomer.getId())) {
+            // Güncellemede de gönderici giriş yapan kullanıcı olmalı
+            if (!sender.getId().equals(currentUser.getId())) {
                 throw new AccessDeniedException(
-                        "Bu müşteri adına gönderi güncelleyemezsiniz.");
+                        "Bu kullanıcı adına gönderi güncelleyemezsiniz.");
             }
         }
 
         if (request.getReceiverId() != null) {
 
-            receiver = customerRepository.findById(request.getReceiverId())
+            receiver = userRepository.findById(request.getReceiverId())
                     .orElseThrow(() ->
                             new EntityNotFoundException("Alıcı bulunamadı."));
         }
@@ -317,7 +314,7 @@ public class ShipmentService {
 
             if (sender == null) {
                 throw new IllegalArgumentException(
-                        "Gönderici adresi kullanmak için gönderici müşteri seçilmelidir.");
+                        "Gönderici adresi kullanmak için gönderici kullanıcı seçilmelidir.");
             }
 
             senderAddress = addressRepository.findById(
@@ -325,9 +322,9 @@ public class ShipmentService {
             ).orElseThrow(() ->
                     new EntityNotFoundException("Gönderici adresi bulunamadı."));
 
-            if (!senderAddress.getCustomer().getId().equals(sender.getId())) {
+            if (!senderAddress.getUser().getId().equals(sender.getId())) {
                 throw new IllegalArgumentException(
-                        "Gönderici adresi bu müşteriye ait değil.");
+                        "Gönderici adresi bu kullanıcıya ait değil.");
             }
         }
 
@@ -335,7 +332,7 @@ public class ShipmentService {
 
             if (receiver == null) {
                 throw new IllegalArgumentException(
-                        "Alıcı adresi kullanmak için alıcı müşteri seçilmelidir.");
+                        "Alıcı adresi kullanmak için alıcı kullanıcı seçilmelidir.");
             }
 
             receiverAddress = addressRepository.findById(
@@ -343,9 +340,9 @@ public class ShipmentService {
             ).orElseThrow(() ->
                     new EntityNotFoundException("Alıcı adresi bulunamadı."));
 
-            if (!receiverAddress.getCustomer().getId().equals(receiver.getId())) {
+            if (!receiverAddress.getUser().getId().equals(receiver.getId())) {
                 throw new IllegalArgumentException(
-                        "Alıcı adresi bu müşteriye ait değil.");
+                        "Alıcı adresi bu kullanıcıya ait değil.");
             }
         }
 
@@ -441,7 +438,7 @@ public class ShipmentService {
 
     public void delete(Integer id) {
 
-        Customer currentCustomer = getCurrentCustomer();
+        User currentUser = getCurrentUser();
 
         // Önce gönderiyi bul
         Shipment shipment = shipmentRepository
@@ -451,7 +448,7 @@ public class ShipmentService {
 
         // Sadece gönderici silebilir
         if (shipment.getSender() == null ||
-                !shipment.getSender().getId().equals(currentCustomer.getId())) {
+                !shipment.getSender().getId().equals(currentUser.getId())) {
 
             throw new AccessDeniedException(
                     "Bu gönderiyi silme yetkiniz yok.");
@@ -599,28 +596,29 @@ public class ShipmentService {
         return response;
     }
 
-    private Customer getCurrentCustomer() {
+    private User getCurrentUser() {
 
         String email = SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getName();
 
-        return customerRepository.findByEmail(email)
+        return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new EntityNotFoundException("Müşteri bulunamadı."));
+                        new EntityNotFoundException(
+                                "Kullanıcı bulunamadı."));
     }
 
     private void checkAccess(
             Shipment shipment,
-            Customer customer) {
+            User user) {
 
         boolean allowed =
                 (shipment.getSender() != null &&
-                        shipment.getSender().getId().equals(customer.getId()))
+                        shipment.getSender().getId().equals(user.getId()))
                         ||
                         (shipment.getReceiver() != null &&
-                                shipment.getReceiver().getId().equals(customer.getId()));
+                                shipment.getReceiver().getId().equals(user.getId()));
 
         if (!allowed) {
             throw new AccessDeniedException(

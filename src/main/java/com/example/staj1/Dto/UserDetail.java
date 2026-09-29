@@ -1,13 +1,13 @@
 package com.example.staj1.Dto;
 
-public class CustomerDetail {
+public class UserDetail {
 
     private Integer id;
     private Integer age;
     private String tc;
 
 
-    public CustomerDetail(Integer id, Integer age, String tc) {
+    public UserDetail(Integer id, Integer age, String tc) {
         this.id = id;
         this.age = age;
         this.tc = tc;

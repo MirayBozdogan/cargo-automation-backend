@@ -19,11 +19,11 @@ public class Shipment {
 
     @ManyToOne
     @JoinColumn(name = "sender_id")
-    private Customer sender;
+    private User sender;
 
     @ManyToOne
     @JoinColumn(name = "receiver_id")
-    private Customer receiver;
+    private User receiver;
 
     private Integer senderAddressId;
     private Integer receiverAddressId;
@@ -94,19 +94,19 @@ public class Shipment {
         this.price = price;
     }
 
-    public Customer getSender() {
+    public User getSender() {
         return sender;
     }
 
-    public void setSender(Customer sender) {
+    public void setSender(User sender) {
         this.sender = sender;
     }
 
-    public Customer getReceiver() {
+    public User getReceiver() {
         return receiver;
     }
 
-    public void setReceiver(Customer receiver) {
+    public void setReceiver(User receiver) {
         this.receiver = receiver;
     }
 

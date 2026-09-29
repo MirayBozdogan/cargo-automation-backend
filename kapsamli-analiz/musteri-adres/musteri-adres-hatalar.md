@@ -1,7 +1,7 @@
 # Müşteri Adresi Ekleme Endpoint'i İçin Hata/Problem Notları
 
 ## Test edilen endpoint
-- POST /customers/{customerId}/address
+- POST /users/{userId}/address
 
 ## Test yöntemi
 Aşağıdaki giriş türleri doğrudan endpoint'e gönderildi:

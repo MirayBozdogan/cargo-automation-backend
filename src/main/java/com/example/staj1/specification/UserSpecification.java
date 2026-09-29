@@ -1,6 +1,6 @@
 package com.example.staj1.specification;
 
-import com.example.staj1.model.Customer;
+import com.example.staj1.model.User;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CustomerSpecification {
+public class UserSpecification {
 
-    public static Specification<Customer> filter(Map<String, String> filters) {
+    public static Specification<User> filter(Map<String, String> filters) {
 
         return (root, query, criteriaBuilder) -> {
 

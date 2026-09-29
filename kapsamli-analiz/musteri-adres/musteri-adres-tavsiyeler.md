@@ -25,7 +25,7 @@ Bu yaklaşım uygundur:
 ## 5. Referans doğrulamasını netleştir
 Şu yaklaşım daha iyi olur:
 - geçersiz `cityId` veya `districtId` için 404/400 dön.
-- `customerId` yoksa da net hata dön.
+- `userId` yoksa da net hata dön.
 
 ## 6. Exception handling ekle
 Daha profesyonel yaklaşım:

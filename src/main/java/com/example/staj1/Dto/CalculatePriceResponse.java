@@ -1,7 +1,5 @@
 package com.example.staj1.Dto;
 
-import com.example.staj1.model.Customer;
-
 import java.math.BigDecimal;
 
 public class CalculatePriceResponse {

@@ -14,9 +14,9 @@ public class Address {
     private Integer buildingNo;
     private Integer apartmentNo;
     @ManyToOne
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "user_id")
     @JsonIgnore
-    private Customer customer;
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "city_id")
@@ -32,14 +32,14 @@ public class Address {
     }
 
     public Address(Integer id, City city, District district, String neighborhood,
-                   Integer apartmentNo, Integer buildingNo, Customer customer) {
+                   Integer apartmentNo, Integer buildingNo, User user) {
         this.id = id;
         this.city = city;
         this.district = district;
         this.neighborhood = neighborhood;
         this.buildingNo = buildingNo;
         this.apartmentNo = apartmentNo;
-        this.customer = customer;
+        this.user = user;
     }
 
     public Integer getId() {
@@ -90,11 +90,11 @@ public class Address {
         this.apartmentNo = apartmentNo;
     }
 
-    public Customer getCustomer() {
-        return customer;
+    public User getUser() {
+        return user;
     }
 
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
+    public void setUser(User user) {
+        this.user = user;
     }
 }

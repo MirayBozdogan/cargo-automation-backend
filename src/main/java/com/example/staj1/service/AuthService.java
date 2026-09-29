@@ -2,8 +2,8 @@ package com.example.staj1.service;
 
 import com.example.staj1.Dto.LoginRequest;
 import com.example.staj1.Dto.RegisterRequest;
-import com.example.staj1.model.Customer;
-import com.example.staj1.repository.CustomerRepository;
+import com.example.staj1.model.User;
+import com.example.staj1.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,56 +12,56 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class AuthService {
 
-    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public AuthService(
-            CustomerRepository customerRepository,
+            UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService) {
 
-        this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
     public void register(RegisterRequest request) {
 
-        if (customerRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Bu email zaten kayıtlı.");
         }
 
-        if (customerRepository.existsByTc(request.getTc())) {
+        if (userRepository.existsByTc(request.getTc())) {
             throw new IllegalArgumentException("Bu TC kimlik numarası zaten kayıtlı.");
         }
 
-        if (customerRepository.existsByTelNo(request.getTelNo())) {
+        if (userRepository.existsByTelNo(request.getTelNo())) {
             throw new IllegalArgumentException("Bu telefon numarası zaten kayıtlı.");
         }
 
-        Customer customer = new Customer();
+        User user = new User();
 
-        customer.setName(request.getName());
-        customer.setSurname(request.getSurname());
-        customer.setEmail(request.getEmail());
-        customer.setAge(request.getAge());
-        customer.setTc(request.getTc());
-        customer.setTelNo(request.getTelNo());
+        user.setName(request.getName());
+        user.setSurname(request.getSurname());
+        user.setEmail(request.getEmail());
+        user.setAge(request.getAge());
+        user.setTc(request.getTc());
+        user.setTelNo(request.getTelNo());
 
-        customer.setPassword(
+        user.setPassword(
                 passwordEncoder.encode(request.getPassword())
         );
 
-        customer.setRole("USER");
+        user.setRole("USER");
 
-        customerRepository.save(customer);
+        userRepository.save(user);
     }
 
 
     public String login(LoginRequest request) {
 
-        Customer customer = customerRepository
+        User user = userRepository
                 .findByEmail(request.getEmail())
                 .orElseThrow(() ->
                         new IllegalArgumentException(
@@ -71,13 +71,13 @@ public class AuthService {
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
-                customer.getPassword())) {
+                user.getPassword())) {
 
             throw new IllegalArgumentException(
                     "Email veya şifre hatalı."
             );
         }
 
-        return jwtService.generateToken(customer);
+        return jwtService.generateToken(user);
     }
 }

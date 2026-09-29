@@ -10,8 +10,8 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "customers")
-public class Customer implements UserDetails {
+@Table(name = "users")
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,16 +37,16 @@ public class Customer implements UserDetails {
     private String role;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "customer")
+    @OneToMany(mappedBy = "user")
     private List<Address> addresses;
 
 
-    public Customer() {
+    public User() {
     }
 
 
-    public Customer(String name, String surname, String email, Integer age,
-                    String tc, String telNo, String password, String role) {
+    public User(String name, String surname, String email, Integer age,
+                String tc, String telNo, String password, String role) {
 
         this.name = name;
         this.surname = surname;
@@ -163,7 +163,7 @@ public class Customer implements UserDetails {
 
     @Override
     public String toString() {
-        return "Customer{" +
+        return "User{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
