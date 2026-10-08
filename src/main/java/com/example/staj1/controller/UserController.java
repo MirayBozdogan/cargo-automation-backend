@@ -1,6 +1,7 @@
 package com.example.staj1.controller;
 
 import com.example.staj1.Dto.UserRequest;
+import com.example.staj1.Dto.CurrentUserResponse;
 import com.example.staj1.model.User;
 import com.example.staj1.service.UserService;
 import jakarta.validation.Valid;
@@ -18,6 +19,11 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @GetMapping("/me")
+    public CurrentUserResponse getMe() {
+        return userService.getMe();
     }
 
     @GetMapping("/{id}")

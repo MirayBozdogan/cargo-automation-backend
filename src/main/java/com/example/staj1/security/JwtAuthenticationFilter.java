@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import io.jsonwebtoken.JwtException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -46,42 +47,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        final String jwt = authHeader.substring(7);
-
-        final String email =
-                jwtService.extractUsername(jwt);
-
-        if (email != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null) {
-
-            UserDetails userDetails =
-                    userRepository.findByEmail(email)
-                            .orElse(null);
-
-            if (userDetails != null &&
-                    jwtService.isTokenValid(jwt, userDetails)) {
-
+        try {
+            String jwt = authHeader.substring(7);
+            String email = jwtService.extractUsername(jwt);
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userRepository.findByEmail(email).orElse(null);
+                if (userDetails == null || !jwtService.isTokenValid(jwt, userDetails)) {
+                    rejectToken(response);
+                    return;
+                }
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        ); //UsernamePasswordAuthenticationToken: Spring Security'nin doğrulanmış kullanıcıları
-                // temsil etmek için kullandığı hazır bir sınıftır.
-
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
-
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        } catch (JwtException | IllegalArgumentException ex) {
+            rejectToken(response);
+            return;
         }
 
         filterChain.doFilter(request, response);
         //Filter işini bitirdi. Request artık controller'a doğru devam edebilir.
+    }
+    private void rejectToken(HttpServletResponse response) throws IOException {
+        SecurityContextHolder.clearContext();
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"message\":\"Oturum geçersiz veya süresi dolmuş. Lütfen yeniden giriş yapın.\"}");
     }
 }

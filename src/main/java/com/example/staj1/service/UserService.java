@@ -1,6 +1,7 @@
 package com.example.staj1.service;
 
 import com.example.staj1.Dto.UserRequest;
+import com.example.staj1.Dto.CurrentUserResponse;
 import com.example.staj1.exception.GlobalExceptionHandler;
 import com.example.staj1.model.User;
 import com.example.staj1.repository.AddressRepository;
@@ -27,6 +28,12 @@ public class UserService {
 
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
+    }
+
+    public CurrentUserResponse getMe() {
+        User user = getCurrentUser();
+        return new CurrentUserResponse(user.getId(), user.getName(), user.getSurname(),
+                user.getEmail(), user.getAge(), user.getTc(), user.getTelNo(), user.getRole());
     }
 
     public User userGet(Integer id) {
