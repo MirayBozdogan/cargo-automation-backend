@@ -43,16 +43,7 @@ public class AddressService {
             );
         }
 
-        List<Address> addresses =
-                addressRepository.findByUserId(userId);
-
-        if (addresses.isEmpty()) {
-            throw new EntityNotFoundException(
-                    "Bu kullanıcıya ait kayıtlı adres bulunamadı."
-            );
-        }
-
-        return addresses;
+        return addressRepository.findByUserId(userId);
     }
 
     public Address create(
