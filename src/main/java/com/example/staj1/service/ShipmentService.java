@@ -296,21 +296,13 @@ public class ShipmentService {
                     "Bu gönderiyi güncelleme yetkiniz yok.");
         }
 
-        User sender = null;
-        User receiver = null;
-
-        if (request.getSenderId() != null) {
-
-            sender = userRepository.findById(request.getSenderId())
-                    .orElseThrow(() ->
-                            new EntityNotFoundException("Gönderici bulunamadı."));
-
-            // Güncellemede de gönderici giriş yapan kullanıcı olmalı
-            if (!sender.getId().equals(currentUser.getId())) {
-                throw new AccessDeniedException(
-                        "Bu kullanıcı adına gönderi güncelleyemezsiniz.");
-            }
+        // Gönderici verilmediğinde mevcut sahiplik korunur.
+        if (request.getSenderId() != null &&
+                !request.getSenderId().equals(shipment.getSender().getId())) {
+            throw new AccessDeniedException("Gönderinin göndericisi değiştirilemez.");
         }
+        User sender = shipment.getSender();
+        User receiver = null;
 
         if (request.getReceiverId() != null) {
 
@@ -476,36 +468,7 @@ public class ShipmentService {
             BigDecimal length,
             BigDecimal height,
             BigDecimal weight) {
-
-        BigDecimal desi = width
-                .multiply(length)
-                .multiply(height)
-                .divide(
-                        BigDecimal.valueOf(3000),
-                        2,
-                        RoundingMode.HALF_UP
-                );
-
-        BigDecimal pricingValue;
-
-        if (desi.compareTo(weight) > 0) {
-            pricingValue = desi;
-        } else {
-            pricingValue = weight;
-        }
-
-        Price price = priceRepository
-                .findByMinDesiLessThanEqualAndMaxDesiGreaterThan(
-                        pricingValue,
-                        pricingValue
-                );
-
-        if (price == null) {
-            throw new EntityNotFoundException(
-                    "Bu desi/ağırlık değeri için fiyat bulunamadı.");
-        }
-
-        return price.getPrice();
+        return calculatePriceDetail(width, length, height, weight).getPrice();
     }
 
     public CalculatePriceResponse calculatePriceDetail(
