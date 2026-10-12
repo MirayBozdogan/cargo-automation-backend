@@ -81,25 +81,31 @@ public class ShipmentService {
 
         User currentUser = getCurrentUser();
 
-        // Sadece giriş yapan kullanıcı kendi adına gönderi oluşturabilir.
-        if (shipmentRequest.getSenderId() == null ||
+        // Gönderici kimliği istemciden değil oturumdan alınır.
+        if (shipmentRequest.getSenderId() != null &&
                 !currentUser.getId().equals(shipmentRequest.getSenderId())) {
-
-            throw new AccessDeniedException(
-                    "Bu kullanıcı adına gönderi oluşturamazsınız.");
+            throw new AccessDeniedException("Bu kullanıcı adına gönderi oluşturamazsınız.");
         }
-
-        User sender = null;
+        if ("USER".equals(currentUser.getRole()) &&
+                (shipmentRequest.getReceiverId() != null || shipmentRequest.getReceiverAddressId() != null)) {
+            throw new AccessDeniedException("Müşteri gönderilerinde alıcı bilgilerini manuel girmelisiniz.");
+        }
+        if (shipmentRequest.getSenderAddressId() == null) {
+            requireText(shipmentRequest.getSenderCity(), "Gönderici şehri");
+            requireText(shipmentRequest.getSenderDistrict(), "Gönderici ilçesi");
+            requireText(shipmentRequest.getSenderAddressText(), "Gönderici adresi");
+        }
+        if (shipmentRequest.getReceiverId() == null) {
+            requireText(shipmentRequest.getReceiverName(), "Alıcı adı");
+            requireText(shipmentRequest.getReceiverSurname(), "Alıcı soyadı");
+        }
+        if (shipmentRequest.getReceiverAddressId() == null) {
+            requireText(shipmentRequest.getReceiverCity(), "Alıcı şehri");
+            requireText(shipmentRequest.getReceiverDistrict(), "Alıcı ilçesi");
+            requireText(shipmentRequest.getReceiverAddressText(), "Alıcı adresi");
+        }
+        User sender = currentUser;
         User receiver = null;
-
-        // Gönderici kullanıcı varsa bul
-        if (shipmentRequest.getSenderId() != null) {
-
-            sender = userRepository.findById(
-                    shipmentRequest.getSenderId()
-            ).orElseThrow(() ->
-                    new EntityNotFoundException("Gönderici bulunamadı."));
-        }
 
         // Alıcı kullanıcı varsa bul
         if (shipmentRequest.getReceiverId() != null) {
@@ -263,6 +269,12 @@ public class ShipmentService {
         Shipment savedShipment = shipmentRepository.save(shipment);
 
         return toResponse(savedShipment);
+    }
+
+    private void requireText(String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " boş olamaz.");
+        }
     }
 
     public ShipmentResponse update(
