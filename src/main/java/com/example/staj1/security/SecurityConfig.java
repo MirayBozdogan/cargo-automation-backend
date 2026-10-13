@@ -1,6 +1,7 @@
 package com.example.staj1.security;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -34,12 +35,12 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/city/**").permitAll()
-                        .requestMatchers("/district/**").permitAll()
-                        .requestMatchers("/shipment/calculate-price/**").permitAll()
-                        .requestMatchers("/price/**").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/city/**", "/district/**", "/price/**").permitAll()
+                        .requestMatchers("/city/**", "/district/**", "/price/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/shipment/calculate-price").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users", "/users/").hasRole("ADMIN")
+                        .anyRequest().hasAnyRole("USER", "STAFF", "ADMIN")
                 )
 
                 .exceptionHandling(exceptions -> exceptions

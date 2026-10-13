@@ -51,19 +51,28 @@ public class UserService {
 
     public List<User> search(Map<String, String> filters) {
 
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-
-        filters.put("email", email);
-
-        Specification<User> specification =
-                UserSpecification.filter(filters);
-
+        User currentUser = getCurrentUser();
+        Specification<User> specification = UserSpecification.filter(filters);
+        if ("USER".equals(currentUser.getRole())) {
+            // LIKE ile e-posta aramak sahiplik kontrolü değildir.
+            specification = specification.and((root, query, builder) ->
+                    builder.equal(root.get("id"), currentUser.getId()));
+        } else if ("STAFF".equals(currentUser.getRole())) {
+            if (filters.containsKey("role") && !"USER".equals(filters.get("role"))) {
+                throw new AccessDeniedException("Personel yalnız müşterileri arayabilir.");
+            }
+            specification = specification.and((root, query, builder) ->
+                    builder.equal(root.get("role"), "USER"));
+        } else if (!"ADMIN".equals(currentUser.getRole())) {
+            throw new AccessDeniedException("Kullanıcı arama yetkiniz yok.");
+        }
         return userRepository.findAll(specification);
     }
 
     public User ekle(UserRequest userRequest) {
+        if (!"ADMIN".equals(getCurrentUser().getRole())) {
+            throw new AccessDeniedException("Kullanıcı eklemek için yönetici olmalısınız.");
+        }
 
         if (userRepository.existsByEmail(userRequest.getEmail())) {
             throw new IllegalArgumentException(
