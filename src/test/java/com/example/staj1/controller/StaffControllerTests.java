@@ -38,4 +38,19 @@ class StaffControllerTests {
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(service);
     }
+    @Test void activityRequiresBooleanValue() throws Exception {
+        mvc.perform(patch("/staff/42/active").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+    @Test void validActivityChangeReturnsUpdatedStaff() throws Exception {
+        when(service.setActive(42, false)).thenReturn(new StaffResponse(42, "Deneme", "Personel", "staff@example.test", 25, "12345678901", "05555554444", "STAFF", false));
+        mvc.perform(patch("/staff/42/active").contentType(MediaType.APPLICATION_JSON).content("{\"active\":false}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
+    }
+    @Test void updateRequiresAllProfileFields() throws Exception {
+        mvc.perform(put("/staff/42").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
 }

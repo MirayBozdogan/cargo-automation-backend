@@ -77,4 +77,12 @@ class EndpointRoleTests {
         assertEquals(403, request("POST", "/staff", "STAFF"));
         assertEquals(204, request("POST", "/staff", "ADMIN"));
     }
+    @Test void staffUpdateAndActivityRequireAdmin() throws Exception {
+        for (String[] action : new String[][]{{"PUT", "/staff/42"}, {"PATCH", "/staff/42/active"}}) {
+            assertEquals(401, request(action[0], action[1], null));
+            assertEquals(403, request(action[0], action[1], "USER"));
+            assertEquals(403, request(action[0], action[1], "STAFF"));
+            assertEquals(204, request(action[0], action[1], "ADMIN"));
+        }
+    }
 }

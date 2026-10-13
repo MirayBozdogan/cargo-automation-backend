@@ -1,6 +1,8 @@
 package com.example.staj1.controller;
 
 import com.example.staj1.Dto.StaffRequest;
+import com.example.staj1.Dto.StaffUpdateRequest;
+import com.example.staj1.Dto.StaffActivityRequest;
 import com.example.staj1.Dto.StaffResponse;
 import com.example.staj1.service.StaffService;
 import jakarta.validation.Valid;
@@ -18,5 +20,14 @@ public class StaffController {
     @PostMapping
     public ResponseEntity<StaffResponse> create(@Valid @RequestBody StaffRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(staffService.create(request));
+    }
+    @PutMapping("/{id}")
+    public StaffResponse update(@PathVariable Integer id, @Valid @RequestBody StaffUpdateRequest request) {
+        return staffService.update(id, request);
+    }
+
+    @PatchMapping("/{id}/active")
+    public StaffResponse setActive(@PathVariable Integer id, @Valid @RequestBody StaffActivityRequest request) {
+        return staffService.setActive(id, request.active());
     }
 }

@@ -16,5 +16,9 @@ public interface UserRepository
 
     boolean existsByTelNo(String telNo);
 
+    boolean existsByEmailAndIdNot(String email, Integer id);
+    boolean existsByTcAndIdNot(String tc, Integer id);
+    boolean existsByTelNoAndIdNot(String telNo, Integer id);
+
     Optional<User> findByEmail(String email);
 }
