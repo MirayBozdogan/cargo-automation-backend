@@ -71,4 +71,10 @@ class EndpointRoleTests {
     @Test void registrationLoginAndPricePreviewRemainPublic() throws Exception {
         for (String path : new String[]{"/auth/register", "/auth/login", "/shipment/calculate-price"}) assertEquals(204, request("POST", path, null));
     }
+    @Test void staffManagementRequiresAdmin() throws Exception {
+        assertEquals(401, request("POST", "/staff", null));
+        assertEquals(403, request("POST", "/staff", "USER"));
+        assertEquals(403, request("POST", "/staff", "STAFF"));
+        assertEquals(204, request("POST", "/staff", "ADMIN"));
+    }
 }
