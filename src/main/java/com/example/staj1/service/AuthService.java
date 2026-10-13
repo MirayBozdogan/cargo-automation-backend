@@ -3,6 +3,7 @@ package com.example.staj1.service;
 import com.example.staj1.Dto.LoginRequest;
 import com.example.staj1.Dto.RegisterRequest;
 import com.example.staj1.model.User;
+import com.example.staj1.model.UserRole;
 import com.example.staj1.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,7 +54,7 @@ public class AuthService {
                 passwordEncoder.encode(request.getPassword())
         );
 
-        user.setRole("USER");
+        user.setRole(UserRole.USER.name());
 
         userRepository.save(user);
     }
@@ -68,6 +69,10 @@ public class AuthService {
                                 "Email veya şifre hatalı."
                         )
                 );
+
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("Bu hesap pasif. Giriş yapamazsınız.");
+        }
 
         if (!passwordEncoder.matches(
                 request.getPassword(),

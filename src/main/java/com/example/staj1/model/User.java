@@ -34,7 +34,11 @@ public class User implements UserDetails {
     @JsonIgnore
     private String password;
 
-    private String role;
+    private String role = UserRole.USER.name();
+
+    // Yeni kolon eklenirken mevcut hesapların da aktif kalmasını sağlar.
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
@@ -55,7 +59,7 @@ public class User implements UserDetails {
         this.tc = tc;
         this.telNo = telNo;
         this.password = password;
-        this.role = role;
+        this.role = UserRole.valueOf(role).name();
     }
 
 
@@ -132,9 +136,16 @@ public class User implements UserDetails {
     }
 
     public void setRole(String role) {
-        this.role = role;
+        this.role = UserRole.valueOf(role).name();
     }
 
+
+    public boolean isActive() { return active; }
+
+    public void setActive(boolean active) { this.active = active; }
+
+    @Override
+    public boolean isEnabled() { return active; }
 
     // Spring Security'nin kullanıcı adını aldığı metot.
     // Biz kullanıcı adı olarak email kullanıyoruz.

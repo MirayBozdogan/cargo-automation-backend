@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = jwtService.extractUsername(jwt);
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userRepository.findByEmail(email).orElse(null);
-                if (userDetails == null || !jwtService.isTokenValid(jwt, userDetails)) {
+                if (userDetails == null || !userDetails.isEnabled() || !jwtService.isTokenValid(jwt, userDetails)) {
                     rejectToken(response);
                     return;
                 }

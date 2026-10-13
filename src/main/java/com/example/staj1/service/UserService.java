@@ -33,7 +33,7 @@ public class UserService {
     public CurrentUserResponse getMe() {
         User user = getCurrentUser();
         return new CurrentUserResponse(user.getId(), user.getName(), user.getSurname(),
-                user.getEmail(), user.getAge(), user.getTc(), user.getTelNo(), user.getRole());
+                user.getEmail(), user.getAge(), user.getTc(), user.getTelNo(), user.getRole(), user.isActive());
     }
 
     public User userGet(Integer id) {
