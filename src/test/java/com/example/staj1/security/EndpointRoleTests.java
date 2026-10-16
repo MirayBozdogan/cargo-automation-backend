@@ -85,4 +85,10 @@ class EndpointRoleTests {
             assertEquals(204, request(action[0], action[1], "ADMIN"));
         }
     }
+    @Test void staffReadRoutesRequireAdmin() throws Exception {
+        for (String path : new String[]{"/staff","/staff/42"}) {
+            assertEquals(401,request("GET",path,null)); assertEquals(403,request("GET",path,"USER"));
+            assertEquals(403,request("GET",path,"STAFF")); assertEquals(204,request("GET",path,"ADMIN"));
+        }
+    }
 }

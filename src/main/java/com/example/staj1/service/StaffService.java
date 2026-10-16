@@ -14,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class StaffService {
@@ -22,6 +25,27 @@ public class StaffService {
 
     public StaffService(UserRepository users, PasswordEncoder encoder) {
         this.users = users; this.encoder = encoder;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<StaffResponse> list(Pageable pageable) {
+        requireAdmin();
+        if (pageable.getPageSize() > 50) {
+            throw new IllegalArgumentException("Sayfa boyutu en fazla 50 olabilir.");
+        }
+        Set<String> sortable = Set.of("id", "name", "surname", "email", "active");
+        for (var order : pageable.getSort()) {
+            if (!sortable.contains(order.getProperty())) {
+                throw new IllegalArgumentException("Desteklenmeyen sıralama alanı.");
+            }
+        }
+        return users.findByRole(UserRole.STAFF.name(), pageable).map(this::response);
+    }
+
+    @Transactional(readOnly = true)
+    public StaffResponse getById(Integer id) {
+        requireAdmin();
+        return response(findStaff(id));
     }
 
     @Transactional

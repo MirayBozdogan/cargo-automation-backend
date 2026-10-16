@@ -20,7 +20,8 @@ class StaffControllerTests {
         """;
     @BeforeEach void setup() {
         mvc = MockMvcBuilders.standaloneSetup(new StaffController(service))
-                .setControllerAdvice(new GlobalExceptionHandler()).build();
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new org.springframework.data.web.PageableHandlerMethodArgumentResolver()).build();
     }
     @Test void successfulCreationReturns201WithoutPassword() throws Exception {
         when(service.create(any())).thenReturn(new StaffResponse(42, "Deneme", "Personel", "staff@example.test", 25, "12345678901", "05555554444", "STAFF", true));
@@ -52,5 +53,18 @@ class StaffControllerTests {
         mvc.perform(put("/staff/42").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(service);
+    }
+    @Test void listReturnsPageMetadataWithoutPasswords() throws Exception {
+        var staff = new StaffResponse(42,"Deneme","Personel","staff@example.test",25,"12345678901","05555554444","STAFF",true);
+        when(service.list(any())).thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of(staff), org.springframework.data.domain.PageRequest.of(0,10),1));
+        mvc.perform(get("/staff").param("page","0").param("size","10"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].role").value("STAFF"))
+                .andExpect(jsonPath("$.content[0].password").doesNotExist());
+    }
+    @Test void detailReturnsStaffWithoutPassword() throws Exception {
+        when(service.getById(42)).thenReturn(new StaffResponse(42,"Deneme","Personel","staff@example.test",25,"12345678901","05555554444","STAFF",false));
+        mvc.perform(get("/staff/42")).andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false))
+                .andExpect(jsonPath("$.password").doesNotExist());
     }
 }
