@@ -91,4 +91,8 @@ class EndpointRoleTests {
             assertEquals(403,request("GET",path,"STAFF")); assertEquals(204,request("GET",path,"ADMIN"));
         }
     }
+    @Test void customerListRequiresStaffOrAdmin() throws Exception {
+        assertEquals(401,request("GET","/users",null)); assertEquals(403,request("GET","/users","USER"));
+        assertEquals(204,request("GET","/users","STAFF")); assertEquals(204,request("GET","/users","ADMIN"));
+    }
 }

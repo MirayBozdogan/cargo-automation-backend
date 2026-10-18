@@ -1,6 +1,11 @@
 package com.example.staj1.service;
 
 import com.example.staj1.Dto.UserRequest;
+import com.example.staj1.Dto.CustomerResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.Set;
 import com.example.staj1.Dto.CurrentUserResponse;
 import com.example.staj1.exception.GlobalExceptionHandler;
 import com.example.staj1.model.User;
@@ -67,6 +72,25 @@ public class UserService {
             throw new AccessDeniedException("Kullanıcı arama yetkiniz yok.");
         }
         return userRepository.findAll(specification);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CustomerResponse> searchCustomers(Map<String, String> filters, Pageable pageable) {
+        User currentUser = getCurrentUser();
+        if (!currentUser.isActive() || !("STAFF".equals(currentUser.getRole()) || "ADMIN".equals(currentUser.getRole()))) {
+            throw new AccessDeniedException("Müşteri listesini yalnız aktif personel ve yöneticiler görebilir.");
+        }
+        if (pageable.getPageSize() > 50) throw new IllegalArgumentException("Sayfa boyutu en fazla 50 olabilir.");
+        Set<String> allowed = Set.of("id", "name", "surname", "email", "age", "tc", "telNo", "active");
+        if (!allowed.containsAll(filters.keySet())) throw new IllegalArgumentException("Desteklenmeyen müşteri arama alanı.");
+        Set<String> sortable = Set.of("id", "name", "surname", "email", "age", "active");
+        for (var order : pageable.getSort()) {
+            if (!sortable.contains(order.getProperty())) throw new IllegalArgumentException("Desteklenmeyen sıralama alanı.");
+        }
+        Specification<User> specification = UserSpecification.filter(filters)
+                .and((root, query, builder) -> builder.equal(root.get("role"), "USER"));
+        return userRepository.findAll(specification, pageable).map(user -> new CustomerResponse(
+                user.getId(), user.getName(), user.getSurname(), user.getEmail(), user.getAge(), user.getTelNo(), user.isActive()));
     }
 
     public User ekle(UserRequest userRequest) {
