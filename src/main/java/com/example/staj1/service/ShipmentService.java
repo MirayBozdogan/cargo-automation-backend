@@ -11,6 +11,7 @@ import com.example.staj1.repository.ShipmentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -77,14 +78,23 @@ public class ShipmentService {
         return shipment;
     }
 
+    @Transactional
     public ShipmentResponse create(ShipmentRequest shipmentRequest) {
 
         User currentUser = getCurrentUser();
 
-        // Gönderici kimliği istemciden değil oturumdan alınır.
-        if (shipmentRequest.getSenderId() != null &&
-                !currentUser.getId().equals(shipmentRequest.getSenderId())) {
-            throw new AccessDeniedException("Bu kullanıcı adına gönderi oluşturamazsınız.");
+        if (!currentUser.isActive()) throw new AccessDeniedException("Pasif hesap gönderi oluşturamaz.");
+        User sender = currentUser;
+        // Müşteri kimliği yalnız personel/yönetici işlemlerinde seçilebilir.
+        if (shipmentRequest.getSenderId() != null && !currentUser.getId().equals(shipmentRequest.getSenderId())) {
+            if (!"STAFF".equals(currentUser.getRole()) && !"ADMIN".equals(currentUser.getRole())) {
+                throw new AccessDeniedException("Bu kullanıcı adına gönderi oluşturamazsınız.");
+            }
+            sender = userRepository.findById(shipmentRequest.getSenderId())
+                    .orElseThrow(() -> new EntityNotFoundException("Gönderici müşteri bulunamadı."));
+            if (!"USER".equals(sender.getRole()) || !sender.isActive()) {
+                throw new IllegalArgumentException("Gönderici aktif bir müşteri olmalıdır.");
+            }
         }
         if ("USER".equals(currentUser.getRole()) &&
                 (shipmentRequest.getReceiverId() != null || shipmentRequest.getReceiverAddressId() != null)) {
@@ -104,7 +114,6 @@ public class ShipmentService {
             requireText(shipmentRequest.getReceiverDistrict(), "Alıcı ilçesi");
             requireText(shipmentRequest.getReceiverAddressText(), "Alıcı adresi");
         }
-        User sender = currentUser;
         User receiver = null;
 
         // Alıcı kullanıcı varsa bul

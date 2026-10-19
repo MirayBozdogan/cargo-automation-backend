@@ -41,4 +41,9 @@ class CustomerControllerTests {
         when(service.searchCustomers(anyMap(),any())).thenThrow(new IllegalArgumentException("Desteklenmeyen müşteri arama alanı."));
         mvc.perform(get("/users").param("password","x")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").exists());
     }
+    @Test void selectedCustomerDetailDoesNotExposeSecrets() throws Exception {
+        when(service.getCustomer(42)).thenReturn(new CustomerResponse(42,"Deneme","Musteri","customer@example.test",25,"05555554444",true));
+        mvc.perform(get("/users/customers/42")).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.password").doesNotExist()).andExpect(jsonPath("$.tc").doesNotExist());
+    }
 }

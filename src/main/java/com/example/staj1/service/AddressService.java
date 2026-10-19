@@ -37,10 +37,15 @@ public class AddressService {
 
         User currentUser = getCurrentUser();
 
+        if (!currentUser.isActive()) throw new AccessDeniedException("Pasif hesap adresleri okuyamaz.");
         if (!currentUser.getId().equals(userId)) {
-            throw new AccessDeniedException(
-                    "Bu kullanıcının adreslerine erişemezsiniz."
-            );
+            boolean staffAccess = "STAFF".equals(currentUser.getRole()) || "ADMIN".equals(currentUser.getRole());
+            if (!staffAccess) throw new AccessDeniedException("Bu kullanıcının adreslerine erişemezsiniz.");
+            User customer = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("Müşteri bulunamadı."));
+            if (!"USER".equals(customer.getRole())) {
+                throw new AccessDeniedException("Yalnız müşterilerin adreslerini görüntüleyebilirsiniz.");
+            }
         }
 
         return addressRepository.findByUserId(userId);

@@ -62,4 +62,12 @@ class CustomerSearchTests {
         assertEquals(21,result.getTotalElements()); assertEquals(3,result.getTotalPages()); assertEquals(42,result.getContent().get(0).id());
         assertTrue(Arrays.stream(result.getContent().get(0).getClass().getRecordComponents()).noneMatch(c -> Set.of("password","tc","addresses").contains(c.getName())));
     }
+    @Test void detailRequiresStaffOrAdminAndCustomerTarget() {
+        User customer = new User(); customer.setId(42); customer.setName("Deneme");
+        when(users.findById(42)).thenReturn(Optional.of(customer));
+        assertEquals(42,service.getCustomer(42).id());
+        current.setRole("USER"); assertThrows(AccessDeniedException.class, () -> service.getCustomer(42));
+        current.setRole("ADMIN"); customer.setRole("ADMIN");
+        assertThrows(IllegalArgumentException.class, () -> service.getCustomer(42));
+    }
 }

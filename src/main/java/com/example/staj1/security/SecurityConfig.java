@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/city/**", "/district/**", "/price/**").permitAll()
                         .requestMatchers("/city/**", "/district/**", "/price/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/shipment/calculate-price").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/customers/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/users", "/users/").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/users", "/users/").hasRole("ADMIN")
                         .requestMatchers("/staff", "/staff/**").hasRole("ADMIN")

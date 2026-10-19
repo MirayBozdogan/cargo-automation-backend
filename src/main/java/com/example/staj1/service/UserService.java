@@ -93,6 +93,18 @@ public class UserService {
                 user.getId(), user.getName(), user.getSurname(), user.getEmail(), user.getAge(), user.getTelNo(), user.isActive()));
     }
 
+    @Transactional(readOnly = true)
+    public CustomerResponse getCustomer(Integer id) {
+        User currentUser = getCurrentUser();
+        if (!currentUser.isActive() || !("STAFF".equals(currentUser.getRole()) || "ADMIN".equals(currentUser.getRole()))) {
+            throw new AccessDeniedException("Müşteri bilgilerini yalnız aktif personel ve yöneticiler görebilir.");
+        }
+        User customer = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Müşteri bulunamadı."));
+        if (!"USER".equals(customer.getRole())) throw new IllegalArgumentException("Bu hesap müşteri değildir.");
+        return new CustomerResponse(customer.getId(), customer.getName(), customer.getSurname(), customer.getEmail(),
+                customer.getAge(), customer.getTelNo(), customer.isActive());
+    }
+
     public User ekle(UserRequest userRequest) {
         if (!"ADMIN".equals(getCurrentUser().getRole())) {
             throw new AccessDeniedException("Kullanıcı eklemek için yönetici olmalısınız.");

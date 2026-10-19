@@ -35,6 +35,11 @@ public class UserController {
         return userService.searchCustomers(filters, pageable);
     }
 
+    @GetMapping("/customers/{id}")
+    public CustomerResponse customer(@PathVariable Integer id) {
+        return userService.getCustomer(id);
+    }
+
     @GetMapping("/me")
     public CurrentUserResponse getMe() {
         return userService.getMe();
