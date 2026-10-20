@@ -1,6 +1,8 @@
 package com.example.staj1.Dto;
 
 import com.example.staj1.model.User;
+import com.example.staj1.model.ShipmentStatus;
+import java.time.Instant;
 
 import java.math.BigDecimal;
 
@@ -30,6 +32,17 @@ public class ShipmentResponse {
     private String receiverDistrict;
     private String receiverAddressText;
     private String barcode;
+    private ShipmentStatus status;
+    private Instant createdAt;
+    private Instant deliveredAt;
+
+    public ShipmentStatus getStatus() { return status; }
+    public void setStatus(ShipmentStatus status) { this.status = status; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getDeliveredAt() { return deliveredAt; }
+    public void setDeliveredAt(Instant deliveredAt) { this.deliveredAt = deliveredAt; }
+
 
     public Integer getId() {
         return id;

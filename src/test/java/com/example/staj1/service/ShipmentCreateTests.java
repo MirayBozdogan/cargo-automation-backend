@@ -4,6 +4,8 @@ import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.model.User;
 import com.example.staj1.model.Shipment;
 import com.example.staj1.model.Price;
+import com.example.staj1.model.ShipmentStatus;
+import java.time.Instant;
 import jakarta.persistence.EntityNotFoundException;
 import com.example.staj1.repository.*;
 import org.junit.jupiter.api.*;
@@ -44,6 +46,9 @@ class ShipmentCreateTests {
         var result = service.create(r);
         assertEquals(user.getId(), result.getSender().getId());
         assertEquals(user.getName(), result.getSenderName());
+        assertEquals(ShipmentStatus.CREATED, result.getStatus());
+        assertNotNull(result.getCreatedAt());
+        assertNull(result.getDeliveredAt());
     }
     @Test void cannotImpersonateAnotherSender() {
         ShipmentRequest r = request(); r.setSenderId(8);
@@ -81,12 +86,17 @@ class ShipmentCreateTests {
     }
     @Test void updateWithoutSenderIdPreservesOwnershipAndBarcode() {
         Shipment existing = existingShipment();
+        Instant createdAt = Instant.parse("2026-01-01T10:00:00Z");
+        existing.setCreatedAt(createdAt);
         doReturn(BigDecimal.TEN).when(service).calculatePrice(any(), any(), any(), any());
         when(shipments.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         var updated = service.update(42, request());
         assertSame(user, existing.getSender());
         assertEquals(user.getId(), updated.getSender().getId());
         assertEquals("DAY8TEST0001", updated.getBarcode());
+        assertEquals(ShipmentStatus.CREATED, updated.getStatus());
+        assertEquals(createdAt, updated.getCreatedAt());
+        assertNull(updated.getDeliveredAt());
     }
     @Test void updateRejectsSenderReplacementWithoutChangingOwnership() {
         Shipment existing = existingShipment();

@@ -3,6 +3,7 @@ package com.example.staj1.model;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 
 @Entity
@@ -45,6 +46,30 @@ public class Shipment {
     private String barcode;
 
     private boolean deleted = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32, columnDefinition = "varchar(32) default 'CREATED'")
+    private ShipmentStatus status = ShipmentStatus.CREATED;
+
+    @Column(name = "created_at", nullable = false, updatable = false,
+            columnDefinition = "timestamp with time zone default CURRENT_TIMESTAMP")
+    private Instant createdAt;
+
+    @Column(name = "delivered_at")
+    private Instant deliveredAt;
+
+    @PrePersist
+    void initializeLifecycle() {
+        if (status == null) status = ShipmentStatus.CREATED;
+        if (createdAt == null) createdAt = Instant.now();
+    }
+
+    public ShipmentStatus getStatus() { return status; }
+    public void setStatus(ShipmentStatus status) { this.status = status; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getDeliveredAt() { return deliveredAt; }
+    public void setDeliveredAt(Instant deliveredAt) { this.deliveredAt = deliveredAt; }
 
     public Integer getId() {
         return id;

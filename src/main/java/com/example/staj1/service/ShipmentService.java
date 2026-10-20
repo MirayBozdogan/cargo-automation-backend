@@ -19,6 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
+import java.time.Instant;
 
 @Service
 public class ShipmentService {
@@ -167,6 +168,8 @@ public class ShipmentService {
         }
 
         Shipment shipment = new Shipment();
+        shipment.setStatus(ShipmentStatus.CREATED);
+        shipment.setCreatedAt(Instant.now());
 
         shipment.setWidth(shipmentRequest.getWidth());
         shipment.setLength(shipmentRequest.getLength());
@@ -553,6 +556,9 @@ public class ShipmentService {
 
         response.setId(shipment.getId());
         response.setBarcode(shipment.getBarcode());
+        response.setStatus(shipment.getStatus());
+        response.setCreatedAt(shipment.getCreatedAt());
+        response.setDeliveredAt(shipment.getDeliveredAt());
         response.setWidth(shipment.getWidth());
         response.setLength(shipment.getLength());
         response.setHeight(shipment.getHeight());
