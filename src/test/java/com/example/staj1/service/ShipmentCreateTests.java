@@ -81,7 +81,7 @@ class ShipmentCreateTests {
     Shipment existingShipment() {
         Shipment existing = new Shipment(); existing.setId(42); existing.setSender(user);
         existing.setBarcode("DAY8TEST0001");
-        when(shipments.findByIdAndDeletedFalse(42)).thenReturn(Optional.of(existing));
+        when(shipments.findByIdForUpdate(42)).thenReturn(Optional.of(existing));
         return existing;
     }
     @Test void updateWithoutSenderIdPreservesOwnershipAndBarcode() {

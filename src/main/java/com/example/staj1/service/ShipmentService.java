@@ -1,5 +1,6 @@
 package com.example.staj1.service;
 
+import com.example.staj1.exception.ShipmentStateException;
 import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
@@ -289,14 +290,50 @@ public class ShipmentService {
         }
     }
 
+    @Transactional
+    public ShipmentResponse accept(Integer id) {
+        return transition(id, ShipmentStatus.CREATED, ShipmentStatus.ACCEPTED);
+    }
+
+    @Transactional
+    public ShipmentResponse prepare(Integer id) {
+        return transition(id, ShipmentStatus.ACCEPTED, ShipmentStatus.READY_FOR_DISTRIBUTION);
+    }
+
+    private ShipmentResponse transition(Integer id, ShipmentStatus expected, ShipmentStatus target) {
+        User operator = getCurrentUser();
+        if (!operator.isActive() ||
+                !(UserRole.STAFF.name().equals(operator.getRole()) ||
+                  UserRole.ADMIN.name().equals(operator.getRole()))) {
+            throw new AccessDeniedException("Bu işlem için personel veya yönetici yetkisi gerekir.");
+        }
+        Shipment shipment = shipmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new EntityNotFoundException("Gönderi bulunamadı."));
+        if (shipment.getStatus() != expected) {
+            throw new ShipmentStateException("Gönderi bu işlem için uygun durumda değil. Beklenen durum: " + expected);
+        }
+        shipment.setStatus(target);
+        return toResponse(shipmentRepository.save(shipment));
+    }
+
+    private void requireEditable(Shipment shipment) {
+        if (shipment.getStatus() != ShipmentStatus.CREATED) {
+            throw new ShipmentStateException("Yalnızca henüz kabul edilmemiş gönderiler düzenlenebilir veya silinebilir.");
+        }
+    }
+
+    @Transactional
     public ShipmentResponse update(
             Integer id,
             ShipmentRequest request) {
 
         User currentUser = getCurrentUser();
+        if (!currentUser.isActive()) {
+            throw new AccessDeniedException("Hesabınız aktif değil.");
+        }
 
         // Önce gönderiyi bul
-        Shipment shipment = shipmentRepository.findByIdAndDeletedFalse(id)
+        Shipment shipment = shipmentRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new EntityNotFoundException("Gönderi bulunamadı."));
 
@@ -307,6 +344,8 @@ public class ShipmentService {
             throw new AccessDeniedException(
                     "Bu gönderiyi güncelleme yetkiniz yok.");
         }
+
+        requireEditable(shipment);
 
         // Gönderici verilmediğinde mevcut sahiplik korunur.
         if (request.getSenderId() != null &&
@@ -452,13 +491,17 @@ public class ShipmentService {
         return toResponse(shipmentRepository.save(shipment));
     }
 
+    @Transactional
     public void delete(Integer id) {
 
         User currentUser = getCurrentUser();
+        if (!currentUser.isActive()) {
+            throw new AccessDeniedException("Hesabınız aktif değil.");
+        }
 
         // Önce gönderiyi bul
         Shipment shipment = shipmentRepository
-                .findByIdAndDeletedFalse(id)
+                .findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new EntityNotFoundException("Gönderi bulunamadı."));
 
@@ -469,6 +512,8 @@ public class ShipmentService {
             throw new AccessDeniedException(
                     "Bu gönderiyi silme yetkiniz yok.");
         }
+
+        requireEditable(shipment);
 
         // Soft delete
         shipment.setDeleted(true);

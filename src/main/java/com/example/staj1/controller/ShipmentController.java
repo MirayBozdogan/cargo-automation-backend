@@ -45,6 +45,16 @@ public class ShipmentController {
         return shipmentService.create(shipmentRequest);
     }
 
+    @PatchMapping("/{id}/accept")
+    public ShipmentResponse accept(@PathVariable Integer id) {
+        return shipmentService.accept(id);
+    }
+
+    @PatchMapping("/{id}/prepare")
+    public ShipmentResponse prepare(@PathVariable Integer id) {
+        return shipmentService.prepare(id);
+    }
+
     @PutMapping("/{id}")
     public ShipmentResponse update(
             @PathVariable Integer id,

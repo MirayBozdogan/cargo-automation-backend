@@ -123,4 +123,10 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
+    @ExceptionHandler(ShipmentStateException.class)
+    public ResponseEntity<Map<String, String>> handleShipmentState(ShipmentStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
 }
