@@ -3,6 +3,8 @@ package com.example.staj1.controller;
 import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
+import com.example.staj1.Dto.ShipmentSummaryResponse;
+import com.example.staj1.model.ShipmentStatus;
 import com.example.staj1.model.Shipment;
 import com.example.staj1.service.ShipmentService;
 import jakarta.validation.Valid;
@@ -25,6 +27,14 @@ public class ShipmentController {
     @GetMapping
     public Page<Shipment> getAll(Pageable pageable) {
         return shipmentService.getAll(pageable);
+    }
+
+    @GetMapping("/operations")
+    public Page<ShipmentSummaryResponse> getOperations(
+            @RequestParam(required = false) ShipmentStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return shipmentService.getOperations(status, page, size);
     }
 
     @GetMapping("/{id}")

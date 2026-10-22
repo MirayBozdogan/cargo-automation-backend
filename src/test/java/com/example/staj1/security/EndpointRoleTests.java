@@ -108,4 +108,13 @@ class EndpointRoleTests {
         }
     }
 
+    @Test void operationsListRequiresStaffOrAdmin() throws Exception {
+        for (String path : new String[]{"/shipment/operations", "/shipment/operations/"}) {
+            assertEquals(401, request("GET", path, null));
+            assertEquals(403, request("GET", path, "USER"));
+            assertEquals(204, request("GET", path, "STAFF"));
+            assertEquals(204, request("GET", path, "ADMIN"));
+        }
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.example.staj1.repository;
 
 import com.example.staj1.model.Shipment;
+import com.example.staj1.model.ShipmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,8 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer> {
     boolean existsByBarcode(String barcode);
 
     Page<Shipment> findByDeletedFalse(Pageable pageable);
+
+    Page<Shipment> findByStatusAndDeletedFalse(ShipmentStatus status, Pageable pageable);
 
     Page<Shipment> findBySender_IdAndDeletedFalseOrReceiver_IdAndDeletedFalse(
             Integer senderId,

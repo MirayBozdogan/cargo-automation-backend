@@ -4,6 +4,9 @@ import com.example.staj1.exception.ShipmentStateException;
 import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
+import com.example.staj1.Dto.ShipmentSummaryResponse;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import com.example.staj1.model.*;
 import com.example.staj1.repository.AddressRepository;
 import com.example.staj1.repository.UserRepository;
@@ -40,6 +43,23 @@ public class ShipmentService {
         this.priceRepository = priceRepository;
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ShipmentSummaryResponse> getOperations(ShipmentStatus status, int page, int size) {
+        requireOperator();
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Sayfa sıfırdan küçük olamaz; sayfa boyutu 1–100 arasında olmalıdır.");
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        Page<Shipment> shipments = status == null
+                ? shipmentRepository.findByDeletedFalse(pageable)
+                : shipmentRepository.findByStatusAndDeletedFalse(status, pageable);
+        return shipments.map(shipment -> new ShipmentSummaryResponse(
+                shipment.getId(), shipment.getBarcode(), shipment.getStatus(),
+                shipment.getSenderName(), shipment.getSenderSurname(),
+                shipment.getReceiverName(), shipment.getReceiverSurname(),
+                shipment.getPrice(), shipment.getCreatedAt()));
     }
 
     public Page<Shipment> getAll(Pageable pageable) {
@@ -301,12 +321,7 @@ public class ShipmentService {
     }
 
     private ShipmentResponse transition(Integer id, ShipmentStatus expected, ShipmentStatus target) {
-        User operator = getCurrentUser();
-        if (!operator.isActive() ||
-                !(UserRole.STAFF.name().equals(operator.getRole()) ||
-                  UserRole.ADMIN.name().equals(operator.getRole()))) {
-            throw new AccessDeniedException("Bu işlem için personel veya yönetici yetkisi gerekir.");
-        }
+        requireOperator();
         Shipment shipment = shipmentRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new EntityNotFoundException("Gönderi bulunamadı."));
         if (shipment.getStatus() != expected) {
@@ -314,6 +329,15 @@ public class ShipmentService {
         }
         shipment.setStatus(target);
         return toResponse(shipmentRepository.save(shipment));
+    }
+
+    private void requireOperator() {
+        User operator = getCurrentUser();
+        if (!operator.isActive() ||
+                !(UserRole.STAFF.name().equals(operator.getRole()) ||
+                  UserRole.ADMIN.name().equals(operator.getRole()))) {
+            throw new AccessDeniedException("Bu işlem için personel veya yönetici yetkisi gerekir.");
+        }
     }
 
     private void requireEditable(Shipment shipment) {
