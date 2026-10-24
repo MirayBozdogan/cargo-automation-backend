@@ -6,6 +6,7 @@ import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
 import com.example.staj1.Dto.ShipmentOperationDetailResponse;
+import com.example.staj1.Dto.CourierResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import com.example.staj1.model.*;
@@ -69,6 +70,10 @@ public class ShipmentService {
         if (id == null || id < 1) throw new IllegalArgumentException("Geçersiz gönderi numarası.");
         Shipment shipment = shipmentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new EntityNotFoundException("Gönderi bulunamadı."));
+        return toOperationDetail(shipment);
+    }
+
+    private ShipmentOperationDetailResponse toOperationDetail(Shipment shipment) {
         return new ShipmentOperationDetailResponse(
                 shipment.getId(), shipment.getBarcode(), shipment.getStatus(),
                 shipment.getWidth(), shipment.getLength(), shipment.getHeight(), shipment.getWeight(), shipment.getPrice(),
@@ -76,7 +81,7 @@ public class ShipmentService {
                 shipment.getSenderDistrict(), shipment.getSenderAddressText(),
                 shipment.getReceiverName(), shipment.getReceiverSurname(), shipment.getReceiverCity(),
                 shipment.getReceiverDistrict(), shipment.getReceiverAddressText(),
-                shipment.getCreatedAt(), shipment.getDeliveredAt());
+                shipment.getCreatedAt(), shipment.getDeliveredAt(), courierResponse(shipment.getCourier()));
     }
 
     public Page<Shipment> getAll(Pageable pageable) {
@@ -90,6 +95,7 @@ public class ShipmentService {
                         pageable);
     }
 
+    @Transactional(readOnly = true)
     public ShipmentResponse getById(Integer id) {
 
         User user = getCurrentUser();
@@ -348,13 +354,55 @@ public class ShipmentService {
         return toResponse(shipmentRepository.save(shipment));
     }
 
-    private void requireOperator() {
+    @Transactional
+    public ShipmentOperationDetailResponse assignCourier(Integer id, Integer courierId) {
+        requireOperator();
+        if (courierId == null || courierId < 1) throw new IllegalArgumentException("Kurye numarası pozitif olmalıdır.");
+        Shipment shipment = shipmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new EntityNotFoundException("Gönderi bulunamadı."));
+        if (shipment.getStatus() != ShipmentStatus.READY_FOR_DISTRIBUTION ||
+                shipment.getCourier() != null || shipment.getDeliveredAt() != null) {
+            throw new ShipmentStateException("Kurye yalnız dağıtıma hazır ve henüz atanmamış gönderiye atanabilir.");
+        }
+        User courier = userRepository.findActiveCourierById(courierId)
+                .orElseThrow(() -> new IllegalArgumentException("Kurye aktif bir personel olmalıdır."));
+        shipment.setCourier(courier);
+        shipment.setStatus(ShipmentStatus.OUT_FOR_DELIVERY);
+        return toOperationDetail(shipmentRepository.save(shipment));
+    }
+
+    @Transactional
+    public ShipmentOperationDetailResponse deliver(Integer id) {
+        User operator = requireOperator();
+        Shipment shipment = shipmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new EntityNotFoundException("Gönderi bulunamadı."));
+        if (shipment.getStatus() != ShipmentStatus.OUT_FOR_DELIVERY ||
+                shipment.getCourier() == null || shipment.getDeliveredAt() != null) {
+            throw new ShipmentStateException("Yalnız kurye atanmış ve dağıtımda olan gönderi teslim edilebilir.");
+        }
+        if (!UserRole.ADMIN.name().equals(operator.getRole()) &&
+                !operator.getId().equals(shipment.getCourier().getId())) {
+            throw new AccessDeniedException("Yalnız atanan personel veya yönetici teslim kaydı yapabilir.");
+        }
+        userRepository.findActiveCourierById(shipment.getCourier().getId())
+                .orElseThrow(() -> new ShipmentStateException("Atanan kurye aktif bir personel olmalıdır."));
+        shipment.setStatus(ShipmentStatus.DELIVERED);
+        shipment.setDeliveredAt(Instant.now());
+        return toOperationDetail(shipmentRepository.save(shipment));
+    }
+
+    private CourierResponse courierResponse(User courier) {
+        return courier == null ? null : new CourierResponse(courier.getId(), courier.getName(), courier.getSurname());
+    }
+
+    private User requireOperator() {
         User operator = getCurrentUser();
         if (!operator.isActive() ||
                 !(UserRole.STAFF.name().equals(operator.getRole()) ||
                   UserRole.ADMIN.name().equals(operator.getRole()))) {
             throw new AccessDeniedException("Bu işlem için personel veya yönetici yetkisi gerekir.");
         }
+        return operator;
     }
 
     private void requireEditable(Shipment shipment) {
@@ -640,6 +688,7 @@ public class ShipmentService {
 
         ShipmentResponse response = new ShipmentResponse();
 
+        response.setCourier(courierResponse(shipment.getCourier()));
         response.setId(shipment.getId());
         response.setBarcode(shipment.getBarcode());
         response.setStatus(shipment.getStatus());

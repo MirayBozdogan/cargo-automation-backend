@@ -9,5 +9,5 @@ public record ShipmentOperationDetailResponse(
         BigDecimal width, BigDecimal length, BigDecimal height, BigDecimal weight, BigDecimal price,
         String senderName, String senderSurname, String senderCity, String senderDistrict, String senderAddressText,
         String receiverName, String receiverSurname, String receiverCity, String receiverDistrict, String receiverAddressText,
-        Instant createdAt, Instant deliveredAt) {
+        Instant createdAt, Instant deliveredAt, CourierResponse courier) {
 }

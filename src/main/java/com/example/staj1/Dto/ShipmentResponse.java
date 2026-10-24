@@ -8,6 +8,10 @@ import java.math.BigDecimal;
 
 public class ShipmentResponse {
 
+    private CourierResponse courier;
+    public CourierResponse getCourier() { return courier; }
+    public void setCourier(CourierResponse courier) { this.courier = courier; }
+
     private Integer id;
     private BigDecimal width;
     private BigDecimal length;

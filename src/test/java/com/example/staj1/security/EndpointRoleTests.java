@@ -124,4 +124,13 @@ class EndpointRoleTests {
         assertEquals(204, request("GET", "/shipment/operations/42", "ADMIN"));
     }
 
+    @Test void courierAssignmentAndDeliveryRequireStaffOrAdmin() throws Exception {
+        for (String path : new String[]{"/shipment/42/assign-courier", "/shipment/42/deliver"}) {
+            assertEquals(401,request("PATCH",path,null));
+            assertEquals(403,request("PATCH",path,"USER"));
+            assertEquals(204,request("PATCH",path,"STAFF"));
+            assertEquals(204,request("PATCH",path,"ADMIN"));
+        }
+    }
+
 }

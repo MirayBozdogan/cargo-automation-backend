@@ -5,6 +5,7 @@ import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
 import com.example.staj1.Dto.ShipmentOperationDetailResponse;
+import com.example.staj1.Dto.AssignCourierRequest;
 import com.example.staj1.model.ShipmentStatus;
 import com.example.staj1.model.Shipment;
 import com.example.staj1.service.ShipmentService;
@@ -69,6 +70,17 @@ public class ShipmentController {
     @PatchMapping("/{id}/prepare")
     public ShipmentResponse prepare(@PathVariable Integer id) {
         return shipmentService.prepare(id);
+    }
+
+    @PatchMapping("/{id}/assign-courier")
+    public ShipmentOperationDetailResponse assignCourier(@PathVariable Integer id,
+            @Valid @RequestBody AssignCourierRequest request) {
+        return shipmentService.assignCourier(id, request.getCourierId());
+    }
+
+    @PatchMapping("/{id}/deliver")
+    public ShipmentOperationDetailResponse deliver(@PathVariable Integer id) {
+        return shipmentService.deliver(id);
     }
 
     @PutMapping("/{id}")

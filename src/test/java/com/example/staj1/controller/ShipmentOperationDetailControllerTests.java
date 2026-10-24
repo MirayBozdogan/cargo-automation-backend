@@ -27,7 +27,7 @@ class ShipmentOperationDetailControllerTests {
         var detail=new ShipmentOperationDetailResponse(42,"TEST00000042",ShipmentStatus.CREATED,
                 BigDecimal.TEN,BigDecimal.TEN,BigDecimal.TEN,BigDecimal.ONE,BigDecimal.TEN,
                 "Ad","Soyad","Ankara","Çankaya","Çıkış adresi",
-                "Alıcı","Soyad","İstanbul","Kadıköy","Teslimat adresi",Instant.parse("2026-01-01T10:00:00Z"),null);
+                "Alıcı","Soyad","İstanbul","Kadıköy","Teslimat adresi",Instant.parse("2026-01-01T10:00:00Z"),null,null);
         when(service.getOperationDetail(42)).thenReturn(detail);
         mvc.perform(get("/shipment/operations/42")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.barcode").value("TEST00000042"))

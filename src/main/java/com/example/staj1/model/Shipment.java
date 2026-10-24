@@ -1,13 +1,14 @@
 package com.example.staj1.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 
 @Entity
-@Table(name = "shipments")
+@Table(name = "shipments", indexes = @Index(name = "idx_shipments_courier", columnList = "courier_id"))
 public class Shipment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +26,15 @@ public class Shipment {
     @ManyToOne
     @JoinColumn(name = "receiver_id")
     private User receiver;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "courier_id", foreignKey = @ForeignKey(name = "fk_shipments_courier"))
+    private User courier;
+
+    @JsonIgnore
+    public User getCourier() { return courier; }
+    public void setCourier(User courier) { this.courier = courier; }
 
     private Integer senderAddressId;
     private Integer receiverAddressId;
