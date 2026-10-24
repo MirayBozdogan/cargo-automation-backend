@@ -117,4 +117,11 @@ class EndpointRoleTests {
         }
     }
 
+    @Test void operationDetailRequiresStaffOrAdmin() throws Exception {
+        assertEquals(401, request("GET", "/shipment/operations/42", null));
+        assertEquals(403, request("GET", "/shipment/operations/42", "USER"));
+        assertEquals(204, request("GET", "/shipment/operations/42", "STAFF"));
+        assertEquals(204, request("GET", "/shipment/operations/42", "ADMIN"));
+    }
+
 }

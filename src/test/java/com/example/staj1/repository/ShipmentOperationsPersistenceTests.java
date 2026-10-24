@@ -18,6 +18,7 @@ class ShipmentOperationsPersistenceTests {
     @Autowired UserRepository users;
     @Autowired ShipmentService service;
     Integer newestId;
+    Integer deletedId;
     @BeforeEach void setup() {
         User staff = new User(); staff.setRole("STAFF"); staff.setEmail(UUID.randomUUID()+"@example.test"); users.saveAndFlush(staff);
         User customer = new User(); customer.setEmail(UUID.randomUUID()+"@example.test"); users.saveAndFlush(customer);
@@ -25,7 +26,7 @@ class ShipmentOperationsPersistenceTests {
         save(customer,ShipmentStatus.CREATED,false);
         save(customer,ShipmentStatus.ACCEPTED,false);
         newestId = save(customer,ShipmentStatus.ACCEPTED,false).getId();
-        save(customer,ShipmentStatus.ACCEPTED,true);
+        deletedId = save(customer,ShipmentStatus.ACCEPTED,true).getId();
     }
     Shipment save(User sender, ShipmentStatus status, boolean deleted) {
         Shipment shipment = new Shipment(); shipment.setSender(sender); shipment.setSenderName("Müşteri");
@@ -51,4 +52,19 @@ class ShipmentOperationsPersistenceTests {
         var result = service.getOperations(ShipmentStatus.DELIVERED,0,10);
         assertTrue(result.isEmpty()); assertEquals(0,result.getTotalElements());
     }
+    @Test void detailReadsSavedAddressAndNameInsteadOfCurrentCustomerProfile() {
+        Shipment shipment = shipments.findById(newestId).orElseThrow();
+        shipment.setSenderAddressText("Gönderi anındaki adres");
+        shipment.setSenderCity("Ankara"); shipment.setSenderDistrict("Çankaya");
+        User sender = shipment.getSender(); sender.setName("Sonradan değişen ad");
+        users.saveAndFlush(sender); shipments.saveAndFlush(shipment);
+        var detail = service.getOperationDetail(newestId);
+        assertEquals("Müşteri", detail.senderName());
+        assertEquals("Gönderi anındaki adres", detail.senderAddressText());
+        assertEquals("Ankara", detail.senderCity());
+    }
+    @Test void deletedShipmentHasNoOperationalDetail() {
+        assertThrows(jakarta.persistence.EntityNotFoundException.class, () -> service.getOperationDetail(deletedId));
+    }
+
 }

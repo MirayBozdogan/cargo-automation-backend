@@ -4,6 +4,7 @@ import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
+import com.example.staj1.Dto.ShipmentOperationDetailResponse;
 import com.example.staj1.model.ShipmentStatus;
 import com.example.staj1.model.Shipment;
 import com.example.staj1.service.ShipmentService;
@@ -35,6 +36,11 @@ public class ShipmentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return shipmentService.getOperations(status, page, size);
+    }
+
+    @GetMapping("/operations/{id}")
+    public ShipmentOperationDetailResponse getOperationDetail(@PathVariable Integer id) {
+        return shipmentService.getOperationDetail(id);
     }
 
     @GetMapping("/{id}")

@@ -5,6 +5,7 @@ import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
+import com.example.staj1.Dto.ShipmentOperationDetailResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import com.example.staj1.model.*;
@@ -60,6 +61,22 @@ public class ShipmentService {
                 shipment.getSenderName(), shipment.getSenderSurname(),
                 shipment.getReceiverName(), shipment.getReceiverSurname(),
                 shipment.getPrice(), shipment.getCreatedAt()));
+    }
+
+    @Transactional(readOnly = true)
+    public ShipmentOperationDetailResponse getOperationDetail(Integer id) {
+        requireOperator();
+        if (id == null || id < 1) throw new IllegalArgumentException("Geçersiz gönderi numarası.");
+        Shipment shipment = shipmentRepository.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new EntityNotFoundException("Gönderi bulunamadı."));
+        return new ShipmentOperationDetailResponse(
+                shipment.getId(), shipment.getBarcode(), shipment.getStatus(),
+                shipment.getWidth(), shipment.getLength(), shipment.getHeight(), shipment.getWeight(), shipment.getPrice(),
+                shipment.getSenderName(), shipment.getSenderSurname(), shipment.getSenderCity(),
+                shipment.getSenderDistrict(), shipment.getSenderAddressText(),
+                shipment.getReceiverName(), shipment.getReceiverSurname(), shipment.getReceiverCity(),
+                shipment.getReceiverDistrict(), shipment.getReceiverAddressText(),
+                shipment.getCreatedAt(), shipment.getDeliveredAt());
     }
 
     public Page<Shipment> getAll(Pageable pageable) {
