@@ -133,4 +133,12 @@ class EndpointRoleTests {
         }
     }
 
+    @Test void courierListIsRestrictedAndTrackingRequiresSession() throws Exception {
+        assertEquals(401,request("GET","/shipment/couriers",null));
+        assertEquals(403,request("GET","/shipment/couriers","USER"));
+        for (String role : new String[]{"STAFF","ADMIN"}) assertEquals(204,request("GET","/shipment/couriers",role));
+        assertEquals(401,request("GET","/shipment/tracking/ABCDEF123456",null));
+        for (String role : new String[]{"USER","STAFF","ADMIN"}) assertEquals(204,request("GET","/shipment/tracking/ABCDEF123456",role));
+    }
+
 }

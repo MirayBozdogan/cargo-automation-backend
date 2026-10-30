@@ -48,6 +48,8 @@ public class SecurityConfig {
                             .hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/shipment/operations", "/shipment/operations/**")
                             .hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/shipment/couriers", "/shipment/couriers/")
+                            .hasAnyRole("STAFF", "ADMIN")
                         .anyRequest().hasAnyRole("USER", "STAFF", "ADMIN")
                 )
 

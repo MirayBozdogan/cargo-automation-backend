@@ -39,6 +39,7 @@ class ShipmentTransactionTests {
     Integer shipmentId;
     Integer customerId;
     Integer staffId;
+    Integer extraStaffId;
     String customerEmail;
     String staffEmail;
 
@@ -69,6 +70,7 @@ class ShipmentTransactionTests {
             if (shipmentId != null) shipments.deleteById(shipmentId);
             if (customerId != null) users.deleteById(customerId);
             if (staffId != null) users.deleteById(staffId);
+            if (extraStaffId != null) users.deleteById(extraStaffId);
         });
     }
 
@@ -203,6 +205,31 @@ class ShipmentTransactionTests {
             assertEquals(staffId,detail.getCourier().id());
             assertEquals(ShipmentStatus.OUT_FOR_DELIVERY,detail.getStatus());
         });
+    }
+
+
+    @Test void simultaneousAssignmentsKeepOnlyTheFirstCourier() throws Exception {
+        extraStaffId=transaction.execute(status -> {
+            User other=new User(); other.setRole("STAFF"); other.setEmail(UUID.randomUUID()+"@example.test");
+            return users.saveAndFlush(other).getId();
+        });
+        asUser(staffEmail, () -> { service.accept(shipmentId); service.prepare(shipmentId); });
+        assertContends(staffEmail, () -> service.assignCourier(shipmentId,staffId),
+                staffEmail, () -> service.assignCourier(shipmentId,extraStaffId), ShipmentStateException.class);
+        assertEquals(staffId,transaction.execute(status -> shipments.findById(shipmentId).orElseThrow().getCourier().getId()));
+    }
+
+    @Test void deliveryRollsBackStatusAndTimestampTogether() {
+        asUser(staffEmail, () -> { service.accept(shipmentId); service.prepare(shipmentId); service.assignCourier(shipmentId,staffId); });
+        var before=snapshot();
+        assertThrows(IllegalStateException.class, () -> asUser(staffEmail, () ->
+                transaction.executeWithoutResult(status -> {
+                    service.deliver(shipmentId); shipments.flush();
+                    throw new IllegalStateException("Simulated failure after delivery");
+                })));
+        assertEquals(before,snapshot()); assertNull(snapshot().deliveredAt());
+        asUser(staffEmail, () -> service.deliver(shipmentId));
+        assertEquals(ShipmentStatus.DELIVERED,snapshot().status());
     }
 
     /** Keep the first transaction open until PostgreSQL confirms the second is waiting on its lock. */

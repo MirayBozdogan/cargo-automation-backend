@@ -6,6 +6,8 @@ import com.example.staj1.Dto.ShipmentResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
 import com.example.staj1.Dto.ShipmentOperationDetailResponse;
 import com.example.staj1.Dto.AssignCourierRequest;
+import com.example.staj1.Dto.CourierResponse;
+import com.example.staj1.Dto.ShipmentTrackingResponse;
 import com.example.staj1.model.ShipmentStatus;
 import com.example.staj1.model.Shipment;
 import com.example.staj1.service.ShipmentService;
@@ -29,6 +31,17 @@ public class ShipmentController {
     @GetMapping
     public Page<Shipment> getAll(Pageable pageable) {
         return shipmentService.getAll(pageable);
+    }
+
+    @GetMapping("/couriers")
+    public Page<CourierResponse> listCouriers(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return shipmentService.listCouriers(page, size);
+    }
+
+    @GetMapping("/tracking/{barcode}")
+    public ShipmentTrackingResponse track(@PathVariable String barcode) {
+        return shipmentService.track(barcode);
     }
 
     @GetMapping("/operations")

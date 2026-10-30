@@ -7,6 +7,8 @@ import com.example.staj1.Dto.ShipmentResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
 import com.example.staj1.Dto.ShipmentOperationDetailResponse;
 import com.example.staj1.Dto.CourierResponse;
+import com.example.staj1.Dto.ShipmentTrackingResponse;
+import java.util.Locale;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import com.example.staj1.model.*;
@@ -45,6 +47,30 @@ public class ShipmentService {
         this.priceRepository = priceRepository;
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CourierResponse> listCouriers(int page, int size) {
+        requireOperator();
+        if (page < 0 || size < 1 || size > 50) {
+            throw new IllegalArgumentException("Sayfa sıfırdan küçük olamaz; sayfa boyutu 1–50 arasında olmalıdır.");
+        }
+        return userRepository.findByRoleAndActiveTrue(UserRole.STAFF.name(),
+                PageRequest.of(page, size, Sort.by("name", "surname", "id"))).map(this::courierResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public ShipmentTrackingResponse track(String barcode) {
+        User currentUser = getCurrentUser();
+        if (!currentUser.isActive()) throw new AccessDeniedException("Hesabınız aktif değil.");
+        String normalized = barcode == null ? "" : barcode.trim().toUpperCase(Locale.ROOT);
+        if (!normalized.matches("[A-Z0-9]{12}")) {
+            throw new IllegalArgumentException("Barkod 12 harf veya rakamdan oluşmalıdır.");
+        }
+        Shipment shipment = shipmentRepository.findTrackingShipment(normalized, currentUser.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Bu barkoda ait erişebileceğiniz gönderi bulunamadı."));
+        return new ShipmentTrackingResponse(shipment.getBarcode(), shipment.getStatus(),
+                shipment.getCreatedAt(), shipment.getDeliveredAt());
     }
 
     @Transactional(readOnly = true)

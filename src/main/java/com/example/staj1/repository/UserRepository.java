@@ -28,6 +28,8 @@ public interface UserRepository
 
     Page<User> findByRole(String role, Pageable pageable);
 
+    Page<User> findByRoleAndActiveTrue(String role, Pageable pageable);
+
     Optional<User> findByEmail(String email);
 
     @Lock(LockModeType.PESSIMISTIC_READ)

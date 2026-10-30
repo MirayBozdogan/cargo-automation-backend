@@ -29,6 +29,10 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer> {
 
     Optional<Shipment> findByIdAndDeletedFalse(Integer id);
 
+    @Query("select s from Shipment s left join s.sender sender left join s.receiver receiver " +
+            "where s.barcode = :barcode and s.deleted = false and (sender.id = :userId or receiver.id = :userId)")
+    Optional<Shipment> findTrackingShipment(@Param("barcode") String barcode, @Param("userId") Integer userId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Shipment s where s.id = :id and s.deleted = false")
     Optional<Shipment> findByIdForUpdate(@Param("id") Integer id);
