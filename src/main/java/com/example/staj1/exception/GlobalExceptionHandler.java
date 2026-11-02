@@ -129,4 +129,9 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", ex.getMessage()));
     }
 
+    @ExceptionHandler(PriceRangeConflictException.class)
+    public ResponseEntity<Map<String, String>> handlePriceRangeConflict(PriceRangeConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
 }

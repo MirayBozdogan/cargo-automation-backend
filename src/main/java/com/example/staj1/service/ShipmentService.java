@@ -649,6 +649,12 @@ public class ShipmentService {
             BigDecimal height,
             BigDecimal weight) {
 
+        for (BigDecimal value : new BigDecimal[]{width, length, height, weight}) {
+            if (value == null || value.signum() <= 0) {
+                throw new IllegalArgumentException("Ölçüler ve ağırlık pozitif olmalıdır.");
+            }
+        }
+
         BigDecimal desi = width
                 .multiply(length)
                 .multiply(height)
@@ -669,11 +675,14 @@ public class ShipmentService {
             calculatedBy = "WEIGHT";
         }
 
-        Price price = priceRepository
-                .findByMinDesiLessThanEqualAndMaxDesiGreaterThan(
-                        calculatedValue,
-                        calculatedValue
-                );
+        Price price;
+        try {
+            // Alt sınır dahil, üst sınır hariç: [minDesi, maxDesi).
+            price = priceRepository.findByMinDesiLessThanEqualAndMaxDesiGreaterThan(calculatedValue, calculatedValue);
+        } catch (org.springframework.dao.IncorrectResultSizeDataAccessException ex) {
+            throw new com.example.staj1.exception.PriceRangeConflictException(
+                    "Bu değer için birden fazla fiyat tarifesi var. Yönetici tarifeleri kontrol etmelidir.");
+        }
 
         if (price == null) {
             throw new EntityNotFoundException(
