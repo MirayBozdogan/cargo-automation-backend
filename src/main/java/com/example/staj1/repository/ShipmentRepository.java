@@ -14,6 +14,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface ShipmentRepository extends JpaRepository<Shipment, Integer> {
 
+    @Query("select new com.example.staj1.Dto.ShipmentStatusCount(s.status, count(s)) " +
+            "from Shipment s where s.deleted = false group by s.status")
+    java.util.List<com.example.staj1.Dto.ShipmentStatusCount> countByStatus();
+
     boolean existsByBarcode(String barcode);
 
     Page<Shipment> findByDeletedFalse(Pageable pageable);

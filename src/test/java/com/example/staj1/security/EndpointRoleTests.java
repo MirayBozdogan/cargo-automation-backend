@@ -141,4 +141,10 @@ class EndpointRoleTests {
         for (String role : new String[]{"USER","STAFF","ADMIN"}) assertEquals(204,request("GET","/shipment/tracking/ABCDEF123456",role));
     }
 
+    @Test void shipmentReportRequiresAdmin() throws Exception {
+        assertEquals(401, request("GET", "/reports/shipments", null));
+        assertEquals(403, request("GET", "/reports/shipments", "USER"));
+        assertEquals(403, request("GET", "/reports/shipments", "STAFF"));
+        assertEquals(204, request("GET", "/reports/shipments", "ADMIN"));
+    }
 }
