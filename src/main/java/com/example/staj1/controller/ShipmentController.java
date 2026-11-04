@@ -9,7 +9,6 @@ import com.example.staj1.Dto.AssignCourierRequest;
 import com.example.staj1.Dto.CourierResponse;
 import com.example.staj1.Dto.ShipmentTrackingResponse;
 import com.example.staj1.model.ShipmentStatus;
-import com.example.staj1.model.Shipment;
 import com.example.staj1.service.ShipmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,7 @@ public class ShipmentController {
 
 
     @GetMapping
-    public Page<Shipment> getAll(Pageable pageable) {
+    public Page<ShipmentResponse> getAll(Pageable pageable) {
         return shipmentService.getAll(pageable);
     }
 
@@ -64,7 +63,7 @@ public class ShipmentController {
     }
 
     @GetMapping("/barcode/{barcode}")
-    public Shipment getByBarcode(@PathVariable String barcode) {
+    public ShipmentResponse getByBarcode(@PathVariable String barcode) {
         return shipmentService.getByBarcode(barcode);
     }
 

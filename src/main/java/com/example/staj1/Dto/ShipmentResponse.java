@@ -1,6 +1,5 @@
 package com.example.staj1.Dto;
 
-import com.example.staj1.model.User;
 import com.example.staj1.model.ShipmentStatus;
 import java.time.Instant;
 
@@ -18,8 +17,8 @@ public class ShipmentResponse {
     private BigDecimal height;
     private BigDecimal weight;
     private BigDecimal price;
-    private User sender;
-    private User receiver;
+    private ShipmentParticipantResponse sender;
+    private ShipmentParticipantResponse receiver;
     private Integer senderAddressId;
     private Integer receiverAddressId;
 
@@ -96,19 +95,19 @@ public class ShipmentResponse {
         this.price = price;
     }
 
-    public User getSender() {
+    public ShipmentParticipantResponse getSender() {
         return sender;
     }
 
-    public void setSender(User sender) {
+    public void setSender(ShipmentParticipantResponse sender) {
         this.sender = sender;
     }
 
-    public User getReceiver() {
+    public ShipmentParticipantResponse getReceiver() {
         return receiver;
     }
 
-    public void setReceiver(User receiver) {
+    public void setReceiver(ShipmentParticipantResponse receiver) {
         this.receiver = receiver;
     }
 

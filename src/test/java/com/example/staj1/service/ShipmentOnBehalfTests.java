@@ -39,7 +39,7 @@ class ShipmentOnBehalfTests {
     @Test void staffAndAdminCanCreateWithCustomerAsSender() {
         for (String role : new String[]{"STAFF","ADMIN"}) {
             operator.setRole(role); var result = service.create(request());
-            assertSame(customer,result.getSender()); assertEquals("Deneme",result.getSenderName()); assertEquals(12,result.getBarcode().length());
+            assertEquals(customer.getId(),result.getSender().getId()); assertEquals("Deneme",result.getSenderName()); assertEquals(12,result.getBarcode().length());
         }
     }
     @Test void customerCannotImpersonateAnotherCustomer() {

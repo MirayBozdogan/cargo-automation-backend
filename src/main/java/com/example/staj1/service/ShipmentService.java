@@ -4,6 +4,7 @@ import com.example.staj1.exception.ShipmentStateException;
 import com.example.staj1.Dto.CalculatePriceResponse;
 import com.example.staj1.Dto.ShipmentRequest;
 import com.example.staj1.Dto.ShipmentResponse;
+import com.example.staj1.Dto.ShipmentParticipantResponse;
 import com.example.staj1.Dto.ShipmentSummaryResponse;
 import com.example.staj1.Dto.ShipmentOperationDetailResponse;
 import com.example.staj1.Dto.CourierResponse;
@@ -110,7 +111,8 @@ public class ShipmentService {
                 shipment.getCreatedAt(), shipment.getDeliveredAt(), courierResponse(shipment.getCourier()));
     }
 
-    public Page<Shipment> getAll(Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<ShipmentResponse> getAll(Pageable pageable) {
 
         User user = getCurrentUser();
 
@@ -118,7 +120,7 @@ public class ShipmentService {
                 .findBySender_IdAndDeletedFalseOrReceiver_IdAndDeletedFalse(
                         user.getId(),
                         user.getId(),
-                        pageable);
+                        pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +137,8 @@ public class ShipmentService {
         return toResponse(shipment);
     }
 
-    public Shipment getByBarcode(String barcode) {
+    @Transactional(readOnly = true)
+    public ShipmentResponse getByBarcode(String barcode) {
 
         User user = getCurrentUser();
 
@@ -146,7 +149,7 @@ public class ShipmentService {
 
         checkAccess(shipment, user);
 
-        return shipment;
+        return toResponse(shipment);
     }
 
     @Transactional
@@ -735,8 +738,8 @@ public class ShipmentService {
         response.setWeight(shipment.getWeight());
         response.setPrice(shipment.getPrice());
 
-        response.setSender(shipment.getSender());
-        response.setReceiver(shipment.getReceiver());
+        response.setSender(shipment.getSender() == null ? null : new ShipmentParticipantResponse(shipment.getSender().getId()));
+        response.setReceiver(shipment.getReceiver() == null ? null : new ShipmentParticipantResponse(shipment.getReceiver().getId()));
 
         response.setSenderAddressId(shipment.getSenderAddressId());
         response.setReceiverAddressId(shipment.getReceiverAddressId());

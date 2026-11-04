@@ -147,4 +147,13 @@ class EndpointRoleTests {
         assertEquals(403, request("GET", "/reports/shipments", "STAFF"));
         assertEquals(204, request("GET", "/reports/shipments", "ADMIN"));
     }
+    @Test void internalErrorDispatchCanRenderOriginalErrorWithoutOpeningProtectedRequests() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/error");
+        request.setServletPath("/error"); request.setDispatcherType(jakarta.servlet.DispatcherType.ERROR);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        security.doFilter(request, response, (req, res) -> ((jakarta.servlet.http.HttpServletResponse) res).setStatus(500));
+        assertEquals(500, response.getStatus());
+        assertEquals(401, request("GET", "/error", null));
+        assertEquals(401, request("GET", "/shipment", null));
+    }
 }
