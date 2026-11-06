@@ -28,6 +28,9 @@ public class AuthService {
     }
 
     public void register(RegisterRequest request) {
+        if (request.getPassword().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            throw new IllegalArgumentException("Şifre UTF-8 biçiminde 72 baytı geçemez.");
+        }
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Bu email zaten kayıtlı.");
