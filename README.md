@@ -1,130 +1,137 @@
 # Cargo Automation Backend
 
-Backend service for a cargo automation system that manages users, addresses, shipments, and shipment price calculations.
-
-## Features
-
-* User registration and authentication
-* JWT-based authentication
-* User and address management
-* Shipment creation and management
-* Shipment price calculation based on shipment details
-* City and district management
-* Soft delete support
-* RESTful API architecture
-* Swagger API documentation
+Spring Boot API for a cargo automation project. Customers create and track their own shipments, staff manage acceptance and delivery, and admins manage staff and view shipment reports.
 
 ## Technologies
 
-* **Java 21**
-* **Spring Boot**
-* **Spring Security**
-* **JWT**
-* **Spring Data JPA**
-* **PostgreSQL**
-* **Maven**
-* **Swagger / OpenAPI**
+Java 21, Spring Boot 4.1.0, Spring Security, Spring Data JPA, PostgreSQL, BCrypt and JJWT. The Maven Wrapper is included.
 
-## Project Structure
+Frontend: [cargo-automation-frontend](https://github.com/MirayBozdogan/cargo-automation-frontend).
 
-```text
-src/main/java/
-└── ...
-    ├── controller
-    ├── service
-    ├── repository
-    ├── model
-    ├── dto
-    ├── security
-    └── exception
-```
+## Roles
 
-## Getting Started
+| Role | Main permissions |
+| --- | --- |
+| `USER` | Register, sign in, read own profile, add own addresses, create and track own shipments |
+| `STAFF` | View customers, create shipments on their behalf, view operations, accept and prepare shipments, assign couriers |
+| `ADMIN` | Staff operations, staff management and aggregate shipment reports |
 
-### Prerequisites
+Courier is an assignment to an active `STAFF` account, not a separate role. Delivery can be recorded by the assigned staff member or an admin. The assigned courier must still be active. Public registration always creates a `USER`; roles cannot be chosen through registration.
 
-* Java 21
-* PostgreSQL
-* Git
+## Local setup
 
-### Clone the Repository
+Requirements: Java 21, PostgreSQL, Git and internet access for the first Maven dependency download. The isolated test command also needs Bash and `psql` on PATH.
 
-```bash
+```sh
 git clone https://github.com/MirayBozdogan/cargo-automation-backend.git
 cd cargo-automation-backend
 ```
 
-### Database Configuration
+Create the development database using your PostgreSQL account; the example below uses `postgres`:
 
-Create a PostgreSQL database and configure the database connection in:
+```sh
+createdb -U postgres cargo_automation_dev
+cp .env.local.properties.example .env.local.properties
+```
+
+Fill in the local file with your own connection values:
+
+```properties
+DB_URL=jdbc:postgresql://localhost:5432/cargo_automation_dev
+DB_USERNAME=postgres
+DB_PASSWORD=your-local-database-password
+JWT_SECRET=your-generated-base64-key
+```
+
+Generate a JWT key locally with `openssl rand -base64 32` and put the output in `JWT_SECRET`. Keep `.env.local.properties` out of Git. Run the backend from the repository root so the local file is found.
+
+```sh
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+API base URL: `http://localhost:8080`. The `dev` profile creates the entity tables and loads 81 Turkish provinces and 973 districts, plus 7 fictional price ranges. This seed only runs against a database named `cargo_automation_dev`; restarting does not duplicate those sample rows. No account is created by default.
+
+For an existing database, review the [manual migration notes](src/main/resources/db/manual/README.md). Hibernate currently uses `ddl-auto=update`; Flyway is not configured. Older shipments whose creation time was missing receive the migration time, not a reconstructed historical time.
+
+## First local admin
+
+The development initializer is opt-in and only runs with the `dev` profile on `cargo_automation_dev`. Add these keys to your ignored local properties file and fill in your own email and password:
+
+```properties
+DEV_ADMIN_ENABLED=true
+DEV_ADMIN_EMAIL=
+DEV_ADMIN_PASSWORD=
+```
+
+The password must be at least 12 characters and at most 72 UTF-8 bytes. Restart the backend, sign in through the frontend, then set `DEV_ADMIN_ENABLED=false` for subsequent starts. The initializer hashes the password and creates an `ADMIN`; it never promotes an existing customer, resets an existing admin password or reactivates an existing account. Use a different email if it is already registered under another role.
+
+An admin can create `STAFF` accounts through Personel Yönetimi. Additional admin creation is not exposed in the application UI. This initializer is for local development.
+
+## Shipment lifecycle
 
 ```text
-src/main/resources/application.properties
+CREATED → ACCEPTED → READY_FOR_DISTRIBUTION → OUT_FOR_DELIVERY → DELIVERED
 ```
 
-Set your database URL, username, and password accordingly.
+- A shipment starts as `CREATED` with a server-generated 12-character barcode and creation time.
+- Only the sender can edit or soft-delete it, and only while it is `CREATED`.
+- Acceptance and preparation require staff/admin access and must follow the sequence.
+- Courier assignment moves a ready shipment to `OUT_FOR_DELIVERY` in the same transaction.
+- Delivery stores `deliveredAt` once. Repeated or out-of-order actions return `409`.
+- Customers can read shipments where they are the sender or receiver; knowing a barcode alone does not grant access.
 
-### Run the Application
+Price calculation uses `width × length × height / 3000`, rounded to two decimals with HALF_UP, then takes the larger of desi and weight. Tariff lower bounds are inclusive and upper bounds exclusive: `[minDesi, maxDesi)`. Price is recalculated on the server when a shipment is saved. Sample prices are fictional.
 
-Using the Maven Wrapper:
+## Main API routes
 
-**macOS / Linux**
+`POST /auth/login` returns a plain-text JWT. Protected requests use `Authorization: Bearer <token>`. Accounts and roles are rechecked from the database on each request; deactivation rejects an existing token too.
 
-```bash
-./mvnw spring-boot:run
+| Method | Route | Access / purpose |
+| --- | --- | --- |
+| POST | `/auth/register`, `/auth/login` | Public registration and login |
+| GET | `/users/me` | Current authenticated account |
+| GET, POST | `/users/{id}/address` | Read permitted addresses / add own address |
+| GET | `/users`, `/users/customers/{id}` | Staff/admin customer list and detail |
+| GET, POST | `/staff` | Admin staff list and creation |
+| PUT | `/staff/{id}` | Admin staff update |
+| PATCH | `/staff/{id}/active` | Admin activation/deactivation |
+| GET | `/city`, `/district`, `/price` | Public reference data |
+| POST | `/shipment/calculate-price` | Public price preview |
+| GET, POST | `/shipment` | Own shipments / create shipment |
+| GET, PUT, DELETE | `/shipment/{id}` | Read own shipment / edit or soft-delete as sender |
+| GET | `/shipment/tracking/{barcode}` | Safe tracking response for sender/receiver |
+| GET | `/shipment/operations` | Staff/admin list, status filter and pagination |
+| GET | `/shipment/operations/{id}` | Staff/admin operation detail |
+| GET | `/shipment/couriers` | Staff/admin active courier options |
+| PATCH | `/shipment/{id}/accept`, `/shipment/{id}/prepare` | Staff/admin ordered transitions |
+| PATCH | `/shipment/{id}/assign-courier` | Staff/admin; body contains `courierId` |
+| PATCH | `/shipment/{id}/deliver` | Assigned staff/admin delivery |
+| GET | `/reports/shipments` | Admin totals and counts for all five statuses |
+
+Reports exclude soft-deleted shipments and include zero counts for empty statuses. Shipment responses contain snapshot names/addresses and small participant/courier DTOs instead of full account objects. OpenAPI/Swagger routes are protected by the current security configuration; they are not public quick-start pages.
+
+## Tests and packaging
+
+```sh
+bash scripts/test-isolated.sh
 ```
 
-**Windows**
+The command creates a temporary PostgreSQL schema, runs `./mvnw clean verify` and removes the schema on exit. It requires a database name ending in `_dev` or `_test`; tests should not be run directly against populated application tables. See [TESTING.md](TESTING.md) for the connection format and details.
 
-```bash
-mvnw.cmd spring-boot:run
+The packaged application is `target/staj1-0.0.1-SNAPSHOT.jar`. It can be started from the repo root with:
+
+```sh
+java -jar target/staj1-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
-The application will run on:
+## Scope and local integration
 
-```text
-http://localhost:8080
-```
+The frontend currently uses `http://localhost:8080`. Backend CORS permits `http://localhost:3000`, including PATCH requests. Use those origins when running the two projects together.
 
-## API Documentation
-
-After starting the application, Swagger UI can be used to explore and test the available API endpoints.
-
-```text
-http://localhost:8080/swagger-ui/index.html
-```
-
-## Authentication
-
-The application uses **JWT (JSON Web Token)** for authentication.
-
-Users can register and log in through the authentication endpoints. After successful login, the returned JWT is used to access protected endpoints.
-
-## Main API Endpoints
-
-| Resource       | Endpoint                    |
-| -------------- | --------------------------- |
-| Authentication | `/auth/register`            |
-| Authentication | `/auth/login`               |
-| Users          | `/users`                    |
-| Addresses      | `/users/{user_id}/address`  |
-| Cities         | `/city`                     |
-| Districts      | `/district`                 |
-| Shipment Price | `/shipment/calculate-price` |
-| Shipments      | `/shipment`                 |
-
-## Related Repository
-
-### Frontend
-
-The frontend of the project is available here:
-
-[Cargo Automation Frontend](https://github.com/MirayBozdogan/cargo-automation-frontend?utm_source=chatgpt.com)
+This first version covers registration → creation → acceptance → preparation → courier assignment → delivery → tracking. Branch transfers, returns, redelivery, failed-delivery workflows, payments, SMS and maps are outside the first version.
 
 ## Author
 
-**Miray Bozdoğan**
+Miray Bozdoğan · Computer Engineering Student
 
-Computer Engineering Student
-
-[GitHub](https://github.com/MirayBozdogan?utm_source=chatgpt.com) · [LinkedIn](https://www.linkedin.com/in/miraybozdoğan?utm_source=chatgpt.com)
+[GitHub](https://github.com/MirayBozdogan) · [LinkedIn](https://www.linkedin.com/in/miraybozdoğan)

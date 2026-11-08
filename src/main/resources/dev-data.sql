@@ -3,22 +3,6 @@
 -- A wrong database aborts initialization with division by zero.
 SELECT 1 / CASE WHEN current_database() = 'cargo_automation_dev' THEN 1 ELSE 0 END;
 
-INSERT INTO cities (name)
-SELECT 'İstanbul' WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'İstanbul');
-INSERT INTO cities (name)
-SELECT 'Ankara' WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Ankara');
-INSERT INTO cities (name)
-SELECT 'İzmir' WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'İzmir');
-
-INSERT INTO districts (name, city_id)
-SELECT d.name, c.id FROM (VALUES
-    ('Kadıköy', 'İstanbul'), ('Üsküdar', 'İstanbul'),
-    ('Çankaya', 'Ankara'), ('Keçiören', 'Ankara'),
-    ('Konak', 'İzmir'), ('Karşıyaka', 'İzmir')
-) AS d(name, city_name)
-JOIN cities c ON c.name = d.city_name
-WHERE NOT EXISTS (SELECT 1 FROM districts old WHERE old.name = d.name AND old.city_id = c.id);
-
 INSERT INTO prices (min_desi, max_desi, price)
 SELECT p.min_desi, p.max_desi, p.price FROM (VALUES
     (0.00, 1.00, 60.00), (1.00, 3.00, 80.00),
