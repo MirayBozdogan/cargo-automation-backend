@@ -48,7 +48,7 @@ class AccountFoundationTests {
         when(users.findByEmail(email)).thenReturn(Optional.of(user));
         MockHttpServletRequest request = new MockHttpServletRequest(); request.addHeader("Authorization", "Bearer test-token");
         MockHttpServletResponse response = new MockHttpServletResponse(); FilterChain chain = mock(FilterChain.class);
-        new JwtAuthenticationFilter(jwt, users).doFilter(request, response, chain);
+        new JwtAuthenticationFilter(jwt, users, new AuthCookies(false, "Strict")).doFilter(request, response, chain);
         assertEquals(401, response.getStatus()); verifyNoInteractions(chain);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }

@@ -22,7 +22,7 @@ class RegistrationPasswordTests {
     UserRepository users; MockMvc mvc; BCryptPasswordEncoder encoder;
     @BeforeEach void setup() {
         users = mock(UserRepository.class); encoder = new BCryptPasswordEncoder();
-        mvc = MockMvcBuilders.standaloneSetup(new AuthController(new AuthService(users, encoder, mock(JwtService.class))))
+        mvc = MockMvcBuilders.standaloneSetup(new AuthController(new AuthService(users, encoder, mock(JwtService.class)), new com.example.staj1.security.AuthCookies(false, "Strict")))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
     String body(String password) {

@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -21,13 +22,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final AuthCookies authCookies;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AuthCookies authCookies) {
 
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.authCookies = authCookies;
+    }
+
+    // Giriş, kayıt ve çıkış eski/bozuk bir çerez yüzünden engellenmemeli.
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/auth/");
     }
 
     @Override
@@ -37,18 +47,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        final String authHeader =
-                request.getHeader("Authorization");
+        // Tarayıcı HttpOnly çerezi gönderir; Authorization: Bearer başlığı API araçları için desteklenmeye devam eder.
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt = authHeader != null && authHeader.startsWith("Bearer ")
+                ? authHeader.substring(7)
+                : authCookies.read(request);
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
-
+        if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            String jwt = authHeader.substring(7);
             String email = jwtService.extractUsername(jwt);
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userRepository.findByEmail(email).orElse(null);
@@ -71,6 +81,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     private void rejectToken(HttpServletResponse response) throws IOException {
         SecurityContextHolder.clearContext();
+        // Geçersiz çerez tarayıcıda kalmasın.
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookies.cleared().toString());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

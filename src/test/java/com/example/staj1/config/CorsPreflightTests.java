@@ -15,8 +15,11 @@ class CorsPreflightTests {
         Map<String, CorsConfiguration> mappings() { return getCorsConfigurations(); }
     }
     MockHttpServletResponse preflight(String origin, String method) throws Exception {
+        return preflight("http://localhost:3000", origin, method);
+    }
+    MockHttpServletResponse preflight(String origins, String origin, String method) throws Exception {
         Registry registry = new Registry();
-        new CorsConfig().corsConfigurer().addCorsMappings(registry);
+        new CorsConfig(origins).corsConfigurer().addCorsMappings(registry);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         registry.mappings().forEach(source::registerCorsConfiguration);
         MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/shipment/42/accept");
@@ -36,6 +39,19 @@ class CorsPreflightTests {
     }
     @Test void unrelatedOriginIsStillRejected() throws Exception {
         assertEquals(403,preflight("https://untrusted.example", "PATCH").getStatus());
+    }
+    @Test void credentialsAreAllowedForTheFrontendOrigin() throws Exception {
+        assertEquals("true",preflight("http://localhost:3000", "POST").getHeader("Access-Control-Allow-Credentials"));
+    }
+    @Test void originsComeFromConfigurationAsCommaSeparatedList() throws Exception {
+        String origins = "http://localhost:3000, https://kargo.example.com";
+        assertEquals(200,preflight(origins, "https://kargo.example.com", "PATCH").getStatus());
+        assertEquals(200,preflight(origins, "http://localhost:3000", "PATCH").getStatus());
+        assertEquals(403,preflight(origins, "https://untrusted.example", "PATCH").getStatus());
+    }
+    @Test void wildcardOrEmptyOriginIsRejectedAtStartup() {
+        assertThrows(IllegalStateException.class, () -> new CorsConfig("*"));
+        assertThrows(IllegalStateException.class, () -> new CorsConfig(" , "));
     }
     @Test void existingMethodsRemainAvailable() throws Exception {
         for (String method : new String[]{"GET","POST","PUT","DELETE"})

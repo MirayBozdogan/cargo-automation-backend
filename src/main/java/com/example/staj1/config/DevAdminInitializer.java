@@ -3,6 +3,8 @@ package com.example.staj1.config;
 import com.example.staj1.model.User;
 import com.example.staj1.model.UserRole;
 import com.example.staj1.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("dev")
 @ConditionalOnProperty(name = "app.dev-admin.enabled", havingValue = "true")
 public class DevAdminInitializer implements CommandLineRunner {
+    private static final Logger log = LoggerFactory.getLogger(DevAdminInitializer.class);
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JdbcTemplate jdbc;
@@ -45,6 +48,8 @@ public class DevAdminInitializer implements CommandLineRunner {
                 throw new IllegalStateException("Bu e-posta başka bir role ait. Yönetici için farklı bir e-posta kullanın.");
             }
             // Mevcut hesabın şifresini, rolünü veya aktifliğini değiştirme.
+            // Bu yüzden ayar açık kalsa da sonraki açılışlar güvenlidir.
+            log.info("Yerel yönetici zaten var: {}", email);
             return;
         }
         User admin = new User();
@@ -53,5 +58,6 @@ public class DevAdminInitializer implements CommandLineRunner {
         admin.setPassword(encoder.encode(password));
         admin.setRole(UserRole.ADMIN.name()); admin.setActive(true);
         users.save(admin);
+        log.info("Yerel yönetici oluşturuldu: {}", email);
     }
 }

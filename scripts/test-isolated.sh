@@ -52,8 +52,9 @@ created=true
 export SPRING_DATASOURCE_URL="$DB_URL?currentSchema=$schema"
 export SPRING_DATASOURCE_USERNAME="$DB_USERNAME" SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD"
 export SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA="$schema"
-export SPRING_PROFILES_ACTIVE=test SPRING_SQL_INIT_MODE=never DEV_ADMIN_ENABLED=false
-export SPRING_JPA_HIBERNATE_DDL_AUTO=update
+# Şemayı uygulamadaki gibi Flyway kurar; Hibernate entity'lerin V1 ile uyumunu doğrular.
+export SPRING_FLYWAY_DEFAULT_SCHEMA="$schema" SPRING_FLYWAY_SCHEMAS="$schema"
+export SPRING_PROFILES_ACTIVE=test DEV_ADMIN_ENABLED=false
 # Gerçek oturum anahtarını test ortamına taşımaya gerek yoktur.
 export JWT_SECRET="${JWT_SECRET:-Y2FyZ28tdGVzdHMtb25seS1rZXktMzItYnl0ZXMtbG9uZw==}"
 echo "Testler ayrı geçici şemada çalışıyor."

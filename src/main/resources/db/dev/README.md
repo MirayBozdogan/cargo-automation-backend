@@ -1,6 +1,13 @@
-# Türkiye il ve ilçe verileri
+# Geliştirme verileri
 
-Bu klasördeki SQL dosyası 81 il ve merkez ilçeler dahil 973 ilçenin adlarını içerir. 8 Kasım 2026 tarihinde ubeydeozdmr/turkiye-api projesinin aşağıdaki sabit commitinden alınmıştır:
+Bu klasör yalnız `dev` profilinde Flyway tarafından çalıştırılır (`spring.flyway.locations`). `R__` ile başlayan dosyalar Flyway'in tekrar çalıştırılabilir (repeatable) migration'larıdır: içerikleri değişirse yeniden uygulanırlar, bu yüzden hepsi mevcut kayıtları koruyacak ve çoğaltmayacak şekilde yazılmıştır. İsim sırasıyla çalışırlar:
+
+1. `R__01_dev_prices.sql`: veritabanı adı kontrolü (yalnız `cargo_automation_dev`) ve 7 hayali fiyat aralığı.
+2. `R__02_turkey_locations.sql`: Türkiye il ve ilçe verileri.
+
+## Türkiye il ve ilçe verileri
+
+`R__02_turkey_locations.sql` dosyası 81 il ve merkez ilçeler dahil 973 ilçenin adlarını içerir. 8 Kasım 2026 tarihinde ubeydeozdmr/turkiye-api projesinin aşağıdaki sabit commitinden alınmıştır:
 
 - Kaynak: https://github.com/ubeydeozdmr/turkiye-api/tree/a0ad8351cb52153e7a92aa7ba9a5bc1e3294da8d/datasets
 - provinces.json Git blob: 815e91e843c089b58799996fde73e59a0c6a4a92
@@ -11,10 +18,10 @@ Kaynak açık kaynak bir derlemedir; resmî canlı nüfus/adres servisi değildi
 
 Kaynak/plaka IDleri uygulamanın tablo IDleri yerine kullanılmaz. Eksik iller isimle, ilçeler ise il+ilçe adıyla eklenir. Mevcut satırlar silinmez veya güncellenmez. Aynı script tekrar çalıştırıldığında kayıtlar çoğalmaz. Kullanıcılar tarafından sonradan oluşturulmuş farklı yazımlı/aynı adlı mükerrer kayıtlar otomatik birleştirilmez.
 
-Dev profilinde önce dev-data.sql (DB guard ve örnek fiyatlar), sonra bu dosya çalışır. Mevcut geliştirme veritabanına elle uygulamak için doğru bağlantı ayarlarıyla tek bir transaction kullanın:
+Dev profiliyle her açılışta Flyway bu dosyayı ilk kez veya içeriği değiştiyse uygular; elle çalıştırmak gerekmez. Gerekirse elle uygulamak için doğru bağlantı ayarlarıyla tek bir transaction kullanın:
 
 ```sh
-psql -X -v ON_ERROR_STOP=1 --single-transaction -d cargo_automation_dev -f src/main/resources/db/reference/turkey-locations.sql
+psql -X -v ON_ERROR_STOP=1 --single-transaction -d cargo_automation_dev -f src/main/resources/db/dev/R__02_turkey_locations.sql
 ```
 
 Bu aktarım kullanıcı talebiyle ayrıca transaction/tablo kilidi ve önce/sonra veri kontrolüyle uygulanmıştır. Uygulamanın çalışma anında bu kaynağa ağ isteği yapılmaz.

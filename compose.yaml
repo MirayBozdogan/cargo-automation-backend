@@ -1,0 +1,42 @@
+# Tek komutla yerel kurulum: PostgreSQL + backend.
+#   1) .env.example dosyasını .env adıyla kopyalayıp değerleri doldurun.
+#   2) docker compose up --build
+# Backend: http://localhost:8080. Veriler "pgdata" volume'unda saklanır.
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: cargo_automation_dev
+      POSTGRES_USER: ${DB_USERNAME:-cargo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD .env dosyasında tanımlanmalı}
+    ports:
+      # IntelliJ veya psql ile bağlanmak için. Yerel PostgreSQL 5432'yi kullandığından varsayılan 5433.
+      - "127.0.0.1:${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://db:5432/cargo_automation_dev
+      DB_USERNAME: ${DB_USERNAME:-cargo}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET .env dosyasında tanımlanmalı (openssl rand -base64 32)}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      DEV_ADMIN_ENABLED: ${DEV_ADMIN_ENABLED:-false}
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-}
+      DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  pgdata:

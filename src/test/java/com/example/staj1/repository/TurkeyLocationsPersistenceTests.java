@@ -18,7 +18,7 @@ class TurkeyLocationsPersistenceTests {
     @Autowired JdbcTemplate jdbc;
 
     void importLocations() {
-        new ResourceDatabasePopulator(new ClassPathResource("db/reference/turkey-locations.sql")).execute(dataSource);
+        new ResourceDatabasePopulator(new ClassPathResource("db/dev/R__02_turkey_locations.sql")).execute(dataSource);
     }
     long count(String table) { return jdbc.queryForObject("SELECT count(*) FROM " + table, Long.class); }
     Map<Integer, String> snapshot(String table) {

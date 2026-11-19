@@ -82,7 +82,7 @@ class StaffUpdateTests {
         when(users.findByEmail(staff.getEmail())).thenReturn(Optional.of(staff));
         MockHttpServletRequest request = new MockHttpServletRequest(); request.addHeader("Authorization", "Bearer existing-token");
         MockHttpServletResponse response = new MockHttpServletResponse(); FilterChain chain = mock(FilterChain.class);
-        new JwtAuthenticationFilter(jwt, users).doFilter(request,response,chain);
+        new JwtAuthenticationFilter(jwt, users, new com.example.staj1.security.AuthCookies(false, "Strict")).doFilter(request,response,chain);
         assertEquals(401,response.getStatus()); verifyNoInteractions(chain);
     }
 }

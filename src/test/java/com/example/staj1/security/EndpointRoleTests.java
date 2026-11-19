@@ -23,7 +23,8 @@ class EndpointRoleTests {
         }
         @Bean UserRepository users() { return mock(UserRepository.class); }
         @Bean JwtService jwt() { return mock(JwtService.class); }
-        @Bean JwtAuthenticationFilter jwtFilter(JwtService jwt, UserRepository users) { return new JwtAuthenticationFilter(jwt, users); }
+        @Bean AuthCookies cookies() { return new AuthCookies(false, "Strict"); }
+        @Bean JwtAuthenticationFilter jwtFilter(JwtService jwt, UserRepository users, AuthCookies cookies) { return new JwtAuthenticationFilter(jwt, users, cookies); }
     }
     @BeforeEach void setup() {
         context = new AnnotationConfigWebApplicationContext(); context.setServletContext(new MockServletContext());
@@ -44,6 +45,30 @@ class EndpointRoleTests {
         MockHttpServletResponse response = new MockHttpServletResponse();
         security.doFilter(request, response, (req, res) -> ((jakarta.servlet.http.HttpServletResponse) res).setStatus(204));
         return response.getStatus();
+    }
+    MockHttpServletResponse cookieRequest(String method, String path, String cookieValue) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, path); request.setServletPath(path);
+        request.setCookies(new jakarta.servlet.http.Cookie(AuthCookies.NAME, cookieValue));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        security.doFilter(request, response, (req, res) -> ((jakarta.servlet.http.HttpServletResponse) res).setStatus(204));
+        return response;
+    }
+    @Test void sessionCookieAuthenticatesLikeBearerHeader() throws Exception {
+        assertEquals(204, cookieRequest("GET", "/users/me", "USER").getStatus());
+        assertEquals(403, cookieRequest("GET", "/reports/shipments", "USER").getStatus());
+        assertEquals(204, cookieRequest("GET", "/reports/shipments", "ADMIN").getStatus());
+    }
+    @Test void invalidSessionCookieIsRejectedAndCleared() throws Exception {
+        when(context.getBean(JwtService.class).extractUsername("broken")).thenThrow(new io.jsonwebtoken.MalformedJwtException("bad"));
+        MockHttpServletResponse response = cookieRequest("GET", "/users/me", "broken");
+        assertEquals(401, response.getStatus());
+        assertTrue(response.getHeader("Set-Cookie").startsWith(AuthCookies.NAME + "=;"));
+        assertTrue(response.getHeader("Set-Cookie").contains("Max-Age=0"));
+    }
+    @Test void staleCookieDoesNotBlockLoginRegisterOrLogout() throws Exception {
+        when(context.getBean(JwtService.class).extractUsername("broken")).thenThrow(new io.jsonwebtoken.MalformedJwtException("bad"));
+        for (String path : new String[]{"/auth/login", "/auth/register", "/auth/logout"})
+            assertEquals(204, cookieRequest("POST", path, "broken").getStatus());
     }
     @Test void referenceReadsStayPublic() throws Exception {
         for (String path : new String[]{"/city", "/district/city/1", "/price"}) assertEquals(204, request("GET", path, null));

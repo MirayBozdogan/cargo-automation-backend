@@ -24,6 +24,8 @@ public class SecurityConfig {
             throws Exception {
 
         http
+                // Oturum çerezi SameSite=Strict/Lax olduğu için başka sitelerden gelen isteklere eklenmez
+                // (bkz. AuthCookies). Bu nedenle ayrıca CSRF token'ı kullanılmıyor.
                 .csrf(csrf -> csrf.disable())
 
                 .cors(cors -> {})
@@ -36,7 +38,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/city/**", "/district/**", "/price/**").permitAll()
                         .requestMatchers("/city/**", "/district/**", "/price/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/shipment/calculate-price").permitAll()
