@@ -2,11 +2,43 @@
 
 Spring Boot API for a cargo automation project. Customers create and track their own shipments, staff manage acceptance and delivery, and admins manage staff and view shipment reports.
 
+A short demo of the user interface is in the [frontend README](https://github.com/MirayBozdogan/cargo-automation-frontend#preview).
+
 ## Technologies
 
 Java 21, Spring Boot 4.1.0, Spring Security, Spring Data JPA, PostgreSQL, Flyway, BCrypt and JJWT. The Maven Wrapper and a Docker Compose setup are included.
 
 Frontend: [cargo-automation-frontend](https://github.com/MirayBozdogan/cargo-automation-frontend).
+
+## Architecture
+
+```mermaid
+flowchart TB
+    user(["Customer / Staff / Admin<br/>browser"])
+
+    subgraph FE["Frontend · Next.js · :3000"]
+        direction LR
+        pages["App Router pages"]
+        client["lib/api.ts<br/>Axios, withCredentials"]
+    end
+
+    subgraph BE["Backend · Spring Boot · :8080"]
+        direction LR
+        security["Spring Security<br/>CORS + JwtAuthenticationFilter"]
+        controllers["Controllers<br/>auth, users, staff, shipment, reports"]
+        services["Services<br/>ownership, roles, pricing, status rules"]
+        repos["Spring Data JPA repositories"]
+        security --> controllers --> services --> repos
+    end
+
+    db[("PostgreSQL<br/>schema managed by Flyway")]
+
+    user --> pages --> client
+    client -- "JSON over HTTP<br/>HttpOnly session cookie" --> security
+    repos --> db
+```
+
+Every request passes through the security filter first. It reads the JWT from the `cargo_session` cookie, loads the account from the database and rejects inactive accounts, so role or status changes take effect immediately. Business rules (who may see a shipment, which status change is allowed, the price) live in the services; the frontend only hides links it knows the user cannot use.
 
 ## Roles
 
@@ -89,8 +121,16 @@ An admin can create `STAFF` accounts through Personel Yönetimi. Additional admi
 
 ## Shipment lifecycle
 
-```text
-CREATED → ACCEPTED → READY_FOR_DISTRIBUTION → OUT_FOR_DELIVERY → DELIVERED
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED: customer or staff creates
+    CREATED --> ACCEPTED: accept (staff/admin)
+    ACCEPTED --> READY_FOR_DISTRIBUTION: prepare (staff/admin)
+    READY_FOR_DISTRIBUTION --> OUT_FOR_DELIVERY: assign courier (active staff)
+    OUT_FOR_DELIVERY --> DELIVERED: deliver (assigned courier or admin)
+    CREATED --> Deleted: sender soft-deletes
+    DELIVERED --> [*]
+    Deleted --> [*]
 ```
 
 - A shipment starts as `CREATED` with a server-generated 12-character barcode and creation time.
