@@ -150,6 +150,7 @@ Price calculation uses `width × length × height / 3000`, rounded to two decima
 | --- | --- | --- |
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | Public registration, login (sets session cookie) and logout |
 | GET | `/users/me` | Current authenticated account |
+| PUT | `/users/me/password` | Change own password; requires the current password. Existing sessions stay valid until they expire |
 | GET, POST | `/users/{id}/address` | Read permitted addresses / add own address |
 | GET | `/users`, `/users/customers/{id}` | Staff/admin customer list and detail |
 | GET, POST | `/staff` | Admin staff list and creation |

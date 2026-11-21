@@ -88,6 +88,10 @@ class EndpointRoleTests {
         assertEquals(401, request("GET", "/shipment", null));
         for (String role : new String[]{"USER", "STAFF", "ADMIN"}) assertEquals(204, request("GET", "/users/me", role));
     }
+    @Test void passwordChangeRequiresSessionForEveryRole() throws Exception {
+        assertEquals(401, request("PUT", "/users/me/password", null));
+        for (String role : new String[]{"USER", "STAFF", "ADMIN"}) assertEquals(204, request("PUT", "/users/me/password", role));
+    }
     @Test void legacyUserCreationRequiresAdmin() throws Exception {
         assertEquals(403, request("POST", "/users", "USER"));
         assertEquals(403, request("POST", "/users", "STAFF"));
