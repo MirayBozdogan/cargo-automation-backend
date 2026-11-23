@@ -24,14 +24,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class ChangePasswordControllerTests {
     static final String EMAIL = "musteri@example.test";
-    UserRepository users; MockMvc mvc; BCryptPasswordEncoder encoder; User user;
+    UserRepository users; JwtService jwt; MockMvc mvc; BCryptPasswordEncoder encoder; User user;
 
     @BeforeEach void setup() {
-        users = mock(UserRepository.class); encoder = new BCryptPasswordEncoder();
+        users = mock(UserRepository.class); jwt = mock(JwtService.class); encoder = new BCryptPasswordEncoder();
+        when(jwt.generateToken(any())).thenReturn("new.jwt.value");
         user = new User(); user.setEmail(EMAIL); user.setRole("USER"); user.setActive(true);
         user.setPassword(encoder.encode("eski-sifre-1"));
         when(users.findByEmail(EMAIL)).thenReturn(Optional.of(user));
-        mvc = MockMvcBuilders.standaloneSetup(new AccountController(new AuthService(users, encoder, mock(JwtService.class))))
+        mvc = MockMvcBuilders.standaloneSetup(new AccountController(new AuthService(users, encoder, jwt),
+                        new com.example.staj1.security.AuthCookies(false, "Strict")))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
@@ -41,10 +43,15 @@ class ChangePasswordControllerTests {
                 .principal(new UsernamePasswordAuthenticationToken(EMAIL, null)));
     }
 
-    @Test void correctCurrentPasswordStoresNewHash() throws Exception {
+    @Test void correctCurrentPasswordStoresNewHashAndEndsOtherSessions() throws Exception {
         change("eski-sifre-1", "yeni-sifre-2").andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Şifreniz değiştirildi."));
+                .andExpect(jsonPath("$.message").value("Şifreniz değiştirildi. Diğer cihazlardaki oturumlar kapatıldı."))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.startsWith("cargo_session=new.jwt.value;")));
         var captor = ArgumentCaptor.forClass(User.class); verify(users).save(captor.capture());
+        assertEquals(1, captor.getValue().getTokenVersion());
+        // Yeni anahtar, sürüm artırıldıktan sonra üretilmeli; yoksa bu cihaz da oturumdan düşer.
+        var order = inOrder(users, jwt);
+        order.verify(users).save(user); order.verify(jwt).generateToken(user);
         String stored = captor.getValue().getPassword();
         assertNotEquals("yeni-sifre-2", stored);
         assertTrue(encoder.matches("yeni-sifre-2", stored));
@@ -53,8 +60,11 @@ class ChangePasswordControllerTests {
 
     @Test void wrongCurrentPasswordIsRejectedWithoutSaving() throws Exception {
         change("yanlis-sifre", "yeni-sifre-2").andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Mevcut şifre hatalı."));
+                .andExpect(jsonPath("$.message").value("Mevcut şifre hatalı."))
+                .andExpect(header().doesNotExist("Set-Cookie"));
         verify(users, never()).save(any());
+        verifyNoInteractions(jwt);
+        assertEquals(0, user.getTokenVersion());
     }
 
     @Test void sameNewPasswordIsRejected() throws Exception {

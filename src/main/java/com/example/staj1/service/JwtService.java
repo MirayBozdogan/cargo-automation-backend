@@ -1,5 +1,6 @@
 package com.example.staj1.service;
 
+import com.example.staj1.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -19,11 +20,13 @@ public class JwtService {
     private String secretKey;
 
     private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 saat
+    static final String TOKEN_VERSION_CLAIM = "ver";
 
     // JWT oluşturur
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
+                .claim(TOKEN_VERSION_CLAIM, tokenVersion(userDetails))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
@@ -37,17 +40,17 @@ public class JwtService {
 
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
+        Claims claims = getAllClaims(token);
+        // Sayı taşımayan eski anahtarlar 0 kabul edilir; hesap şifresini değiştirene kadar geçerli kalırlar.
+        Number version = claims.get(TOKEN_VERSION_CLAIM, Number.class);
 
-        return username.equals(userDetails.getUsername())
-                && !isTokenExpired(token);
+        return claims.getSubject().equals(userDetails.getUsername())
+                && (version == null ? 0 : version.intValue()) == tokenVersion(userDetails)
+                && !claims.getExpiration().before(new Date());
     }
 
-    // Token'ın süresi dolmuş mu?
-    private boolean isTokenExpired(String token) {
-        return getAllClaims(token)
-                .getExpiration()
-                .before(new Date());
+    private static int tokenVersion(UserDetails userDetails) {
+        return userDetails instanceof User user ? user.getTokenVersion() : 0;
     }
 
     // Token içindeki bilgileri alır

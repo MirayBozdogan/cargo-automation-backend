@@ -40,6 +40,11 @@ public class User implements UserDetails {
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean active = true;
 
+    // Şifre değişince artar; JWT'deki sayı bununla eşleşmezse oturum reddedilir (bkz. JwtService).
+    @JsonIgnore
+    @Column(name = "token_version", nullable = false, columnDefinition = "integer default 0")
+    private int tokenVersion = 0;
+
     @JsonIgnore
     @OneToMany(mappedBy = "user")
     private List<Address> addresses;
@@ -143,6 +148,10 @@ public class User implements UserDetails {
     public boolean isActive() { return active; }
 
     public void setActive(boolean active) { this.active = active; }
+
+    public int getTokenVersion() { return tokenVersion; }
+
+    public void setTokenVersion(int tokenVersion) { this.tokenVersion = tokenVersion; }
 
     @Override
     public boolean isEnabled() { return active; }

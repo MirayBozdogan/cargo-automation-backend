@@ -144,13 +144,13 @@ Price calculation uses `width × length × height / 3000`, rounded to two decima
 
 ## Main API routes
 
-`POST /auth/login` sets the JWT in an `HttpOnly` cookie named `cargo_session` (`SameSite=Strict`, 24 hours) and does not return the token in the response body, so browser JavaScript cannot read it. `POST /auth/logout` expires the cookie. An `Authorization: Bearer <token>` header is still accepted for API tools. Accounts and roles are rechecked from the database on each request; deactivation rejects an existing token too. Logout is stateless: a token copied before logout stays valid until it expires.
+`POST /auth/login` sets the JWT in an `HttpOnly` cookie named `cargo_session` (`SameSite=Strict`, 24 hours) and does not return the token in the response body, so browser JavaScript cannot read it. `POST /auth/logout` expires the cookie. An `Authorization: Bearer <token>` header is still accepted for API tools. Accounts and roles are rechecked from the database on each request; deactivation rejects an existing token too. Logout is stateless: a token copied before logout stays valid until it expires. Changing the password raises the account's token version (`users.token_version`, carried in the token as `ver`), so every token issued before the change is rejected.
 
 | Method | Route | Access / purpose |
 | --- | --- | --- |
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | Public registration, login (sets session cookie) and logout |
 | GET | `/users/me` | Current authenticated account |
-| PUT | `/users/me/password` | Change own password; requires the current password. Existing sessions stay valid until they expire |
+| PUT | `/users/me/password` | Change own password; requires the current password. Ends the account's other sessions and sets a new session cookie for this one |
 | GET, POST | `/users/{id}/address` | Read permitted addresses / add own address |
 | GET | `/users`, `/users/customers/{id}` | Staff/admin customer list and detail |
 | GET, POST | `/staff` | Admin staff list and creation |

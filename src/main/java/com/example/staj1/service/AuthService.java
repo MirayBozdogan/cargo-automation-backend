@@ -95,7 +95,8 @@ public class AuthService {
         return jwtService.generateToken(user);
     }
 
-    public void changePassword(String email, ChangePasswordRequest request) {
+    // Hesabın bütün eski oturumlarını geçersiz kılar ve bu cihaz için yeni bir oturum anahtarı döner.
+    public String changePassword(String email, ChangePasswordRequest request) {
         requireBcryptLength(request.getNewPassword());
 
         User user = userRepository.findByEmail(email)
@@ -110,6 +111,8 @@ public class AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
+        return jwtService.generateToken(user);
     }
 }
