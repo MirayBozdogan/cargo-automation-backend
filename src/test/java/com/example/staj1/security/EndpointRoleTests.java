@@ -88,6 +88,13 @@ class EndpointRoleTests {
         assertEquals(401, request("GET", "/shipment", null));
         for (String role : new String[]{"USER", "STAFF", "ADMIN"}) assertEquals(204, request("GET", "/users/me", role));
     }
+    @Test void passwordResetRoutesArePublicEvenWithStaleCookie() throws Exception {
+        when(context.getBean(JwtService.class).extractUsername("broken")).thenThrow(new io.jsonwebtoken.MalformedJwtException("bad"));
+        for (String path : new String[]{"/auth/forgot-password", "/auth/reset-password"}) {
+            assertEquals(204, request("POST", path, null));
+            assertEquals(204, cookieRequest("POST", path, "broken").getStatus());
+        }
+    }
     @Test void passwordChangeRequiresSessionForEveryRole() throws Exception {
         assertEquals(401, request("PUT", "/users/me/password", null));
         for (String role : new String[]{"USER", "STAFF", "ADMIN"}) assertEquals(204, request("PUT", "/users/me/password", role));

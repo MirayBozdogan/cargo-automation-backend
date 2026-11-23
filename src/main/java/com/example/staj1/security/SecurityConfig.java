@@ -38,7 +38,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/logout",
+                                "/auth/forgot-password", "/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/city/**", "/district/**", "/price/**").permitAll()
                         .requestMatchers("/city/**", "/district/**", "/price/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/shipment/calculate-price").permitAll()

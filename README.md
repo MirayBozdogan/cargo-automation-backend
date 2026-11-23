@@ -66,7 +66,7 @@ Fill in `.env`: a local database password, a JWT key from `openssl rand -base64 
 docker compose up --build
 ```
 
-This starts PostgreSQL and the backend at `http://localhost:8080` with the `dev` profile: Flyway creates the tables, loads the sample data and the first admin is created. Data is kept in the `pgdata` Docker volume across restarts; `docker compose down -v` deletes it. The database is also reachable from the host on `localhost:5433` (change with `DB_HOST_PORT`). Keep `.env` out of Git.
+This starts PostgreSQL, Mailpit (a local mail catcher, inbox at `http://localhost:8025`) and the backend at `http://localhost:8080` with the `dev` profile: Flyway creates the tables, loads the sample data and the first admin is created. Data is kept in the `pgdata` Docker volume across restarts; `docker compose down -v` deletes it. The database is also reachable from the host on `localhost:5433` (change with `DB_HOST_PORT`). Keep `.env` out of Git.
 
 ## Local setup without Docker
 
@@ -100,6 +100,14 @@ Generate a JWT key locally with `openssl rand -base64 32` and put the output in 
 ```
 
 On Windows use `mvnw.cmd` instead of `./mvnw` and `copy` instead of `cp`.
+
+Password reset emails go to SMTP `localhost:1025`. To read them locally, start only the Mailpit container and open `http://localhost:8025`:
+
+```sh
+docker compose up -d mailpit
+```
+
+If no mail server is running, the reset request still answers normally and the backend logs a warning; the link cannot be delivered.
 
 API base URL: `http://localhost:8080`. Flyway creates the tables from `src/main/resources/db/migration`; Hibernate only validates the schema (`ddl-auto=validate`). The `dev` profile also loads 81 Turkish provinces and 973 districts, plus 7 fictional price ranges, from `src/main/resources/db/dev`. This seed only runs against a database named `cargo_automation_dev`; restarting does not duplicate those sample rows. No account is created by default.
 
@@ -149,6 +157,8 @@ Price calculation uses `width × length × height / 3000`, rounded to two decima
 | Method | Route | Access / purpose |
 | --- | --- | --- |
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | Public registration, login (sets session cookie) and logout |
+| POST | `/auth/forgot-password` | Public. Emails a one-time reset link if an active account has this address; the response is the same either way |
+| POST | `/auth/reset-password` | Public. Sets a new password with the link's token and ends the account's sessions |
 | GET | `/users/me` | Current authenticated account |
 | PUT | `/users/me/password` | Change own password; requires the current password. Ends the account's other sessions and sets a new session cookie for this one |
 | GET, POST | `/users/{id}/address` | Read permitted addresses / add own address |
@@ -192,6 +202,11 @@ java -jar target/staj1-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated frontend origins allowed to call the API with the session cookie. `*` is rejected. |
 | `AUTH_COOKIE_SECURE` | `false` | Set to `true` when the API is served over HTTPS. |
 | `AUTH_COOKIE_SAME_SITE` | `Strict` | `Strict` or `Lax`. `None` is not supported because it would require CSRF tokens. |
+| `MAIL_HOST`, `MAIL_PORT` | `localhost`, `1025` | SMTP server for password reset emails (Mailpit locally). `MAIL_USERNAME` / `MAIL_PASSWORD` are optional. |
+| `MAIL_FROM` | `no-reply@cargo-automation.local` | Sender address of password reset emails. |
+| `PASSWORD_RESET_URL` | `http://localhost:3000/reset-password` | Frontend page the emailed link opens; `?token=...` is appended. |
+
+Password reset links are valid for 30 minutes and only once; only a SHA-256 hash of the link token is stored. Requesting a new link closes earlier unused links, and an account receives at most one link per minute. A completed reset ends every open session of the account. There is no per-IP rate limit yet.
 
 The frontend reads the API address from `NEXT_PUBLIC_API_URL` (default `http://localhost:8080`). When either address changes, update both sides. Because the cookie is `SameSite`, the frontend and API must be on the same site (for example `app.example.com` and `api.example.com`, or two ports on `localhost`).
 

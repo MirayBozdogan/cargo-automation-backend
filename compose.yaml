@@ -1,7 +1,7 @@
-# Tek komutla yerel kurulum: PostgreSQL + backend.
+# Tek komutla yerel kurulum: PostgreSQL + Mailpit (sahte e-posta kutusu) + backend.
 #   1) .env.example dosyasını .env adıyla kopyalayıp değerleri doldurun.
 #   2) docker compose up --build
-# Backend: http://localhost:8080. Veriler "pgdata" volume'unda saklanır.
+# Backend: http://localhost:8080, gelen e-postalar: http://localhost:8025. Veriler "pgdata" volume'unda saklanır.
 services:
   db:
     image: postgres:18-alpine
@@ -20,11 +20,21 @@ services:
       timeout: 3s
       retries: 30
 
+  # Şifre sıfırlama e-postalarını yakalar; hiçbir e-posta dışarı gönderilmez.
+  # IntelliJ ile çalışırken yalnız bunu başlatmak için: docker compose up -d mailpit
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
   backend:
     build: .
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://db:5432/cargo_automation_dev
@@ -35,6 +45,9 @@ services:
       DEV_ADMIN_ENABLED: ${DEV_ADMIN_ENABLED:-false}
       DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-}
       DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      PASSWORD_RESET_URL: ${PASSWORD_RESET_URL:-http://localhost:3000/reset-password}
     ports:
       - "127.0.0.1:8080:8080"
 
