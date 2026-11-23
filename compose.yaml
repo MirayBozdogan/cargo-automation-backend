@@ -21,7 +21,8 @@ services:
       retries: 30
 
   # Şifre sıfırlama e-postalarını yakalar; hiçbir e-posta dışarı gönderilmez.
-  # IntelliJ ile çalışırken yalnız bunu başlatmak için: docker compose up -d mailpit
+  # IntelliJ ile çalışırken yalnız Mailpit için (.env gerekmez):
+  # docker run -d --rm --name cargo-mailpit -p 127.0.0.1:1025:1025 -p 127.0.0.1:8025:8025 axllent/mailpit:v1.27
   mailpit:
     image: axllent/mailpit:v1.27
     ports:

@@ -101,10 +101,10 @@ Generate a JWT key locally with `openssl rand -base64 32` and put the output in 
 
 On Windows use `mvnw.cmd` instead of `./mvnw` and `copy` instead of `cp`.
 
-Password reset emails go to SMTP `localhost:1025`. To read them locally, start only the Mailpit container and open `http://localhost:8025`:
+Password reset emails go to SMTP `localhost:1025`. To read them locally, start a Mailpit container and open `http://localhost:8025` (this does not need a `.env` file; `docker stop cargo-mailpit` stops it):
 
 ```sh
-docker compose up -d mailpit
+docker run -d --rm --name cargo-mailpit -p 127.0.0.1:1025:1025 -p 127.0.0.1:8025:8025 axllent/mailpit:v1.27
 ```
 
 If no mail server is running, the reset request still answers normally and the backend logs a warning; the link cannot be delivered.
